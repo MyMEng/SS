@@ -1,0 +1,8 @@
+# LaTeX files
+*.aux
+*.dvi
+*.fdb_latexmk
+*.fls
+*.log
+*.pdf
+*.toc

@@ -1,0 +1,115 @@
+\documentclass[12pt, a4paper, pdflatex]{article}
+
+\usepackage[top=1in, bottom=1in, left=1in, right=1in]{geometry}
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+\usepackage{lipsum}
+\usepackage[labelfont=bf]{caption}
+\usepackage[]{algorithm2e}
+\usepackage{listings}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}    % fancy maths font
+\usepackage{mathrsfs}    % fancy maths font
+\usepackage{dsfont}      % indocator finction
+\usepackage{mathtools}
+
+\usepackage[usenames,dvipsnames]{color}
+
+% \newcommand{\ts}{\textsuperscript}
+% \usepackage{url}
+
+\begin{document}
+\pagenumbering{gobble}% Remove page numbers
+
+\begin{center}
+    \begin{large}
+    {\HRule \\[0.2cm]}
+    \textsc{System exploits}
+    {\HRule \\[0.3cm]}
+    \end{large}
+
+    \begin{minipage}{ 0.49\textwidth }
+        \begin{flushleft}
+            Kacper \textbf{Sokol}---\texttt{ks1591}---3GGK1\\
+            Maciej \textbf{Kumorek}---\texttt{mkXXXX}---XXXXX
+        \end{flushleft}
+    \end{minipage}
+    \begin{minipage}{ 0.49\textwidth }
+        \begin{flushright}
+            {COMSM1500 $|$ Systems Security\\
+            Coursework: Part A---\today\\[0.3cm]}
+        \end{flushright}
+    \end{minipage}
+\end{center}
+
+
+\section{String formatting}
+\lipsum[1]
+\subsection{How to do it?}
+\RestyleAlgo{boxed}
+\SetAlCapSkip{1em}
+\LinesNumbered
+\SetCommentSty{mycommfont}
+\vspace{2cm}
+\begin{algorithm}[h]
+  \KwData{Data stream $...x_t, x_{t+1}, x_{t+2}, ...$;number of initialization points $T$; reservoir size $r$; fit threshold $\epsilon$.}
+
+  \tcc{Initialization}
+  $m$ $\leftarrow$ APModel($x_1, ..., x_T$)\;
+  $Reservoir$ $\leftarrow$ \{\}\;
+
+  \tcc{Receiving data}
+  \For{$t > T$}{
+  Compute $e_i =$ nearest exemplar to $x_t$ \;
+
+  \uIf{$d\left( x_t, e_i \right) < \epsilon$}{Update model $m$ \;}
+  \Else{$Reservoir$ $\leftarrow$ $x_t$\;}
+
+  Rebuild Trigger $\leftarrow$ ( $\left\vert{Reservoir}\right\vert > r$ || Change Point Detection on input stream )\;
+
+  \If{Rebuild Trigger}{
+    Rebuild model $m$\;
+    $Reservoir$ $\leftarrow$ \{\}\;
+  }
+
+    \caption{Streaming Affinity Propagation Clustering Algorithm.\label{alg:APC}}
+    }
+\end{algorithm}
+\vspace{1cm}
+
+\subsection{And the code looks like this...}
+\vspace{1em}
+\lstset{
+  captionpos=b,
+  frame=single,
+  emph={module, import, create, schema, as, @Name, @Description, select, from, win:time},
+  emphstyle={\color{red}\bfseries},
+  caption=EPL file example.,
+  label=lst:EPL
+}
+\begin{lstlisting}
+module
+  SpringfieldNuclearPowerPlant.engine.ExternalFeatureExtractor;
+
+import
+  featureExtractors.FeatureExtractor;
+
+create schema SinTick  as randomGenerators.Sine;
+
+@Name('Basic---Statistics')
+@Description('Extract basic signal statistics to features')
+select
+avg(current) as F1,
+stddev(current) as F2,
+from SinTick.win:time(60 sec);
+\end{lstlisting}
+
+
+\section{\texttt{chroot} vulnerability}
+\lipsum[2]
+
+
+\section{Buffer overflow}
+\lipsum[3]
+
+\end{document}
