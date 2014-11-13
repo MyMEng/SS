@@ -211,41 +211,6 @@ The original secrets: 0x44 -- 0x55
 The new secrets:      0x44 -- 0x1e
 \end{lstlisting}
 
-
-\RestyleAlgo{boxed}
-\SetAlCapSkip{1em}
-\LinesNumbered
-\SetCommentSty{mycommfont}
-
-\vspace{2cm}
-
-
-\begin{algorithm}[h]
-  \KwData{Data stream $...x_t, x_{t+1}, x_{t+2}, ...$;number of initialization points $T$; reservoir size $r$; fit threshold $\epsilon$.}
-
-  \tcc{Initialization}
-  $m$ $\leftarrow$ APModel($x_1, ..., x_T$)\;
-  $Reservoir$ $\leftarrow$ \{\}\;
-
-  \tcc{Receiving data}
-  \For{$t > T$}{
-  Compute $e_i =$ nearest exemplar to $x_t$ \;
-
-  \uIf{$d\left( x_t, e_i \right) < \epsilon$}{Update model $m$ \;}
-  \Else{$Reservoir$ $\leftarrow$ $x_t$\;}
-
-  Rebuild Trigger $\leftarrow$ ( $\left\vert{Reservoir}\right\vert > r$ || Change Point Detection on input stream )\;
-
-  \If{Rebuild Trigger}{
-    Rebuild model $m$\;
-    $Reservoir$ $\leftarrow$ \{\}\;
-  }
-
-    \caption{Streaming Affinity Propagation Clustering Algorithm.\label{alg:APC}}
-    }
-\end{algorithm}
-\vspace{1cm}
-
 \subsection{Memory randomization}
 
 Last part of the task was to show if we can perform the four task we executed before if we didn't have the extra \texttt{scanf} method that allows us to store an integer from user input into \texttt{int\_input} variable in the vulnerable program.
