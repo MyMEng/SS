@@ -43,6 +43,18 @@
     \end{minipage}
 \end{center}
 
+\section{Introduction}
+
+\subsection{Statement of contributions}
+
+\begin{center}
+\begin{tabular}{ l | p{8.5cm} | c }
+  Group member ID & Contribution outline & Contribution \\
+  \hline
+  ks1591 & jhkljhkhkj hklhkhkljhkhjkh kjhkhjkhkj hhhhhhjkjkhhj khjgghtfyu jhgghcfgj tytyd & 50\% \\
+  mk0932 & jhkljhkhkjhklh  khkljhkhjkhkjhk hjkhkjhhhh hhjkjkhhjkhjg ghtfyujhgg hcfgjtyty d & 50\% \\
+\end{tabular}
+\end{center}
 
 \section{String formatting}
 
@@ -55,6 +67,7 @@ In the target program provided, a \emph{printf} method was used without any form
 	captionpos=b,
 	frame=single,
 	language=C,
+  breaklines=true,
 	caption=Fragment of code that would not include the vulnerability,
 	label=chroot:vul
 }
@@ -70,6 +83,7 @@ the \emph{printf} was used without explicitly specifying that we want to print t
 	captionpos=b,
 	frame=single,
 	language=C,
+  breaklines=true,
 	caption=Fragment of includes the vulnerability,
 	label=chroot:vul2
 }
@@ -97,7 +111,8 @@ In order to crash the program it was enough to provide a string as input that co
 \lstset{
 	captionpos=b,
 	frame=single,
-	language=BASH,
+	language=bash,
+  breaklines=true,
 	caption=Example of crashing the program,
 	label=printf:crash
 }
@@ -120,7 +135,8 @@ In the second part of this task we wanted to be able to provide such a format sp
 \lstset{
 	captionpos=b,
 	frame=single,
-	language=BASH,
+	language=bash,
+  breaklines=true,
 	caption=Example of printing out memory,
 	label=printf:crash
 }
@@ -211,6 +227,7 @@ The new secrets:      0x44 -- 0x1a
 \lstset{
   captionpos=b,
   frame=single,
+  breaklines=true,
   emph={module, import, create, schema, as, @Name, @Description, select, from, win:time},
   emphstyle={\color{red}\bfseries},
   caption=EPL file example.,
@@ -246,12 +263,15 @@ Hard links are used all over the operating system to point to given location in 
 
 \subsubsection{File descriptors}
 
+
 \subsubsection{Command vs.\ system call}
 
 \subsection{Abusing unconstrained \texttt{chroot}}
 \subsubsection{\texttt{set-UID} in jail}
+\emph{Set-root-UID} programs can be run inside \texttt{chroot} jail.
 
 \subsubsection{Getting root with \texttt{su}}
+It is possible to gain root privileges using \texttt{/tmp/su}
 
 \subsubsection{Preserve root privileges after exiting jail}
 
@@ -264,6 +284,7 @@ Hard links are used all over the operating system to point to given location in 
   captionpos=b,
   frame=single,
   language=bash,
+  breaklines=true,
   caption=Kill processes outside of chroot jail.,
   label=chroot:kill
 }
@@ -286,5 +307,9 @@ Option can be:
 
 \section{Buffer overflow}
 \lipsum[3]
+
+\section{Conclusions}
+
+\section{References?}
 
 \end{document}
