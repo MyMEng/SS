@@ -105,7 +105,7 @@ Being able to specify the string format specifier allows us to use \texttt{print
 It's important to realize that argument list for printf would be kept on the stack. Therefore we can use \texttt{printf} to traverse the stack using for instance many \texttt{\%x} in the input string.
 
 \subsubsection{Crashing the program}
-In order to crash the program it was enough to provide a string as input that contained a few \texttt{\%s}. This way values popped from the stack would be provided to the \texttt{printf} method and memory address at the locations specified by the values. At some point we would try access memory that the process couldn't access which results in a segmentation fault and a crash of the program.
+In order to crash the program it was enough to provide a string as input that contained a few \texttt{\%s}. This way values popped from the stack would be provided to the \texttt{printf} method and memory address at the locations specified by the values. At some point the program attempts to access memory that the process shouldn't be able to. This results in a segmentation fault and a crash of the program.
 
 \vspace{1em}
 \lstset{
@@ -164,7 +164,7 @@ In order to change value of the second element of \texttt{secret} array, similar
 	captionpos=b,
 	frame=single,
 	language=BASH,
-	caption=Example of printing out memory,
+	caption=Example of overwriting memory,
 	label=printf:change,
 	breaklines=true,
 }
@@ -185,7 +185,31 @@ The new secrets:      0x44 -- 0x1a
 
 \subsubsection{Changing the value of \texttt{secret[1]} to a pre-determined value}
 
+If we wanted to change \texttt{secret[1]} to a pre-determined value, we need to know exactly what \texttt{\%n} format specifier does. We know it prints a number of bytes printed in output so far into memory location on the heap determined by the current value on the top of the stack. We can see in~\ref{printf:change} that we changed the secret to 0x1a, or 26 in decimal, and before that we printed "bf835510bf835590bf83558400" which is exactly 26 one-byte wide characters. This is the minimum value we can set it to, however if we add more characters, we can keep increasing the number that will be stored in \texttt{secret[1]} until we reach desired value. For instance, if we wanted to change the value to 30 (or 0x1E), we need to stick four more characters into the format specifier string as shown in~\ref{printf:change2} where we added "AAAA".  
 
+\vspace{1em}
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=BASH,
+	caption=Example of overwriting memory with a specified value,
+	label=printf:change2,
+	breaklines=true,
+}
+\begin{lstlisting}
+seed@seed-desktop:~/cwk2$ ./vul
+The variable secret’s address is 0xbff74c4c (on stack)
+The variable secret’s value is 0x 9b18008 (on heap)
+secret[0]’s address is 0x 9b18008 (on heap)
+secret[1]’s address is 0x 9b1800c (on heap)
+Please enter a decimal integer
+162627596
+Please enter a string
+%x%x%x%x%xAAAA%n
+bff74c50bff74cd0bff74cc400AAAA
+The original secrets: 0x44 -- 0x55
+The new secrets:      0x44 -- 0x1e
+\end{lstlisting}
 
 
 \RestyleAlgo{boxed}
@@ -222,34 +246,11 @@ The new secrets:      0x44 -- 0x1a
 \end{algorithm}
 \vspace{1cm}
 
-\subsection{And the code looks like this...}
-\vspace{1em}
-\lstset{
-  captionpos=b,
-  frame=single,
-  breaklines=true,
-  emph={module, import, create, schema, as, @Name, @Description, select, from, win:time},
-  emphstyle={\color{red}\bfseries},
-  caption=EPL file example.,
-  label=lst:EPL
-}
-\begin{lstlisting}
-module
-  SpringfieldNuclearPowerPlant.engine.ExternalFeatureExtractor;
+\subsection{Memory randomization}
 
-import
-  featureExtractors.FeatureExtractor;
+Last part of the task was to show if we can perform the four task we executed before if we didn't have the extra \texttt{scanf} method that allows us to store an integer from user input into \texttt{int\_input} variable in the vulnerable program.
 
-create schema SinTick  as randomGenerators.Sine;
-
-@Name('Basic---Statistics')
-@Description('Extract basic signal statistics to features')
-select
-avg(current) as F1,
-stddev(current) as F2,
-from SinTick.win:time(60 sec);
-\end{lstlisting}
-
+In order to execute this task we had to disable virtual memory randomization, so that at every consecutive execution of our program the memory addresses of the \texttt{secret} would stay exactly the same.
 
 \section{\texttt{chroot} vulnerability}
 \subsection{Understanding how \texttt{chroot} works}
