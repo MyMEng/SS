@@ -100,12 +100,12 @@ Being able to specify the string format specifier allows us to use \texttt{print
 \begin{itemize}
 	\item \texttt{\%x} - prints hexadecimal value provided in the arguments list
 	\item \texttt{\%s} - prints value at the current memory location from the heap provided by arguments list
-	\item \texttt{\%w} - writes number of bytes written so far to the output at the current location provided by arguments list
+	\item \texttt{\%n} - writes number of bytes written so far to the output at the current location provided by arguments list
 \end{itemize}
 It's important to realize that argument list for printf would be kept on the stack. Therefore we can use \texttt{printf} to traverse the stack using for instance many \texttt{\%x} in the input string.
 
 \subsubsection{Crashing the program}
-In order to crash the program it was enough to provide a string as input that contained a few \texttt{\%s}. This way values popped from the stack would be provided to the \texttt{printf} method and memory address at the locations specified by the values. At some point we would try access memory that the process couldn't access which results in a segmentation fault and a crash of the program.
+In order to crash the program it was enough to provide a string as input that contained a few \texttt{\%s}. This way values popped from the stack would be provided to the \texttt{printf} method and memory address at the locations specified by the values. At some point the program attempts to access memory that the process shouldn't be able to. This results in a segmentation fault and a crash of the program.
 
 \vspace{1em}
 \lstset{
@@ -129,7 +129,7 @@ Segmentation fault
 
 \subsubsection{Printing out specified memory from heap}
 In the second part of this task we wanted to be able to provide such a format specifier that would allow us to print out some specified memory location. In this example we wanted to print out value of two-element array secret. Because provided vulnerable program to exploit prints out the address of both secrets values on the heap, we know where to look for them. We need to use \texttt{\%s} format specifier to access memory location of 
-\texttt{secret} array. We ask to print six values from the stack, and the next variable on the stack would contain address to the first element of secret. However, secret is on the heap, so it's not to easy to access the second element of the array. We used the fact that a user is also prompted to input the decimal integer. Hence at runtime we can see where \texttt{secret[1]} is, and provide this value to be stored in \texttt{int\_input} integer variable. Now since that value is on the stack, after poping initial 5 values, if we also add \texttt{\%s.\%s} in the format specifier string, we tell \texttt{printf} to show us memory content at next two memory locations, specified by the contents of next two values on the stack, which corresponds to \texttt{secret[1]} and \texttt{secret[0]} and in the output below we can see that U and D are printed. These two characters have ASCII values of 0x55 and 0x44 which is what we wanted.
+\texttt{secret} array. We ask to print six values from the stack, and the next variable on the stack would contain address to the first element of secret. However, secret is on the heap, so it's not to easy to access the second element of the array. We used the fact that a user is also prompted to input the decimal integer. Hence at runtime we can see where \texttt{secret[1]} is, and provide the address of \texttt{secret[1]} on heap, in decimal format, to be stored in \texttt{int\_input} integer variable. Now since that value is on the stack, after poping initial 5 values, if we also add \texttt{\%s.\%s} in the format specifier string, we tell \texttt{printf} to show us memory content at next two memory locations, specified by the contents of next two values on the stack, which corresponds to \texttt{secret[1]} and \texttt{secret[0]} and in the output below we can see that U and D are printed. These two characters have ASCII values of 0x55 and 0x44 which is what we wanted.
 
 \vspace{1em}
 \lstset{
@@ -157,73 +157,65 @@ The new secrets:      0x44 -- 0x55
 
 \subsubsection{Changing the value of \texttt{secret[1]}}
 
-\subsubsection{Changing the value of \texttt{secret[1]} to a pre-determined value}
+In order to change value of the second element of \texttt{secret} array, similar approach must be taken as for printing it, i.e. we provide address of the value that interests us to be stored int \texttt{int\_input} variable, then we must pop elements of the stack by providing format specifier with a number of \texttt{\%x}s, and then instead of printing value of heap memory in location contained in the next element on the stack, we can use \texttt{\%n} to write modify the memory location. Example is shown in listing~\ref{printf:change}. As we can see, we are able to change the value of the secret from 0x55 to 0x1a.
 
-
-
-
-\RestyleAlgo{boxed}
-\SetAlCapSkip{1em}
-\LinesNumbered
-\SetCommentSty{mycommfont}
-
-\vspace{2cm}
-
-
-\begin{algorithm}[h]
-  \KwData{Data stream $...x_t, x_{t+1}, x_{t+2}, ...$;number of initialization points $T$; reservoir size $r$; fit threshold $\epsilon$.}
-
-  \tcc{Initialization}
-  $m$ $\leftarrow$ APModel($x_1, ..., x_T$)\;
-  $Reservoir$ $\leftarrow$ \{\}\;
-
-  \tcc{Receiving data}
-  \For{$t > T$}{
-  Compute $e_i =$ nearest exemplar to $x_t$ \;
-
-  \uIf{$d\left( x_t, e_i \right) < \epsilon$}{Update model $m$ \;}
-  \Else{$Reservoir$ $\leftarrow$ $x_t$\;}
-
-  Rebuild Trigger $\leftarrow$ ( $\left\vert{Reservoir}\right\vert > r$ || Change Point Detection on input stream )\;
-
-  \If{Rebuild Trigger}{
-    Rebuild model $m$\;
-    $Reservoir$ $\leftarrow$ \{\}\;
-  }
-
-    \caption{Streaming Affinity Propagation Clustering Algorithm.\label{alg:APC}}
-    }
-\end{algorithm}
-\vspace{1cm}
-
-\subsection{And the code looks like this...}
 \vspace{1em}
 \lstset{
-  captionpos=b,
-  frame=single,
-  breaklines=true,
-  emph={module, import, create, schema, as, @Name, @Description, select, from, win:time},
-  emphstyle={\color{red}\bfseries},
-  caption=EPL file example.,
-  label=lst:EPL
+	captionpos=b,
+	frame=single,
+	language=BASH,
+	caption=Example of overwriting memory,
+	label=printf:change,
+	breaklines=true,
 }
 \begin{lstlisting}
-module
-  SpringfieldNuclearPowerPlant.engine.ExternalFeatureExtractor;
-
-import
-  featureExtractors.FeatureExtractor;
-
-create schema SinTick  as randomGenerators.Sine;
-
-@Name('Basic---Statistics')
-@Description('Extract basic signal statistics to features')
-select
-avg(current) as F1,
-stddev(current) as F2,
-from SinTick.win:time(60 sec);
+seed@seed-desktop:~/cwk2$ ./vul
+The variable secret’s address is 0xbf83550c (on stack)
+The variable secret’s value is 0x 9448008 (on heap)
+secret[0]’s address is 0x 9448008 (on heap)
+secret[1]’s address is 0x 944800c (on heap)
+Please enter a decimal integer
+155484172
+Please enter a string
+%x%x%x%x%x%n
+bf835510bf835590bf83558400
+The original secrets: 0x44 -- 0x55
+The new secrets:      0x44 -- 0x1a
 \end{lstlisting}
 
+\subsubsection{Changing the value of \texttt{secret[1]} to a pre-determined value}
+
+If we wanted to change \texttt{secret[1]} to a pre-determined value, we need to know exactly what \texttt{\%n} format specifier does. We know it prints a number of bytes printed in output so far into memory location on the heap determined by the current value on the top of the stack. We can see in~\ref{printf:change} that we changed the secret to 0x1a, or 26 in decimal, and before that we printed "bf835510bf835590bf83558400" which is exactly 26 one-byte wide characters. This is the minimum value we can set it to, however if we add more characters, we can keep increasing the number that will be stored in \texttt{secret[1]} until we reach desired value. For instance, if we wanted to change the value to 30 (or 0x1E), we need to stick four more characters into the format specifier string as shown in~\ref{printf:change2} where we added "AAAA".  
+
+\vspace{1em}
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=BASH,
+	caption=Example of overwriting memory with a specified value,
+	label=printf:change2,
+	breaklines=true,
+}
+\begin{lstlisting}
+seed@seed-desktop:~/cwk2$ ./vul
+The variable secret’s address is 0xbff74c4c (on stack)
+The variable secret’s value is 0x 9b18008 (on heap)
+secret[0]’s address is 0x 9b18008 (on heap)
+secret[1]’s address is 0x 9b1800c (on heap)
+Please enter a decimal integer
+162627596
+Please enter a string
+%x%x%x%x%xAAAA%n
+bff74c50bff74cd0bff74cc400AAAA
+The original secrets: 0x44 -- 0x55
+The new secrets:      0x44 -- 0x1e
+\end{lstlisting}
+
+\subsection{Memory randomization}
+
+Last part of the task was to show if we can perform the four task we executed before if we didn't have the extra \texttt{scanf} method that allows us to store an integer from user input into \texttt{int\_input} variable in the vulnerable program.
+
+In order to execute this task we had to disable virtual memory randomization, so that at every consecutive execution of our program the memory addresses of the \texttt{secret} would stay exactly the same.
 
 \section{\texttt{chroot} vulnerability}
 \subsection{Understanding how \texttt{chroot} works}
