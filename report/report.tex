@@ -11,7 +11,7 @@
 \usepackage{amsfonts}    % fancy maths font
 \usepackage{mathrsfs}    % fancy maths font
 \usepackage{dsfont}      % indocator finction
-
+\usepackage{hyperref}
 \usepackage[usenames,dvipsnames]{color}
 
 % \newcommand{\ts}{\textsuperscript}
@@ -44,7 +44,10 @@
 
 \section{String formatting}
 
-First task was to exploit program using \emph{printf} method for formatted string output in a vulnerable way. In the target program \emph{printf} was used without any format specifier, combined with the ability for users to specify input, allowed to provide any format specifier to the program, i.e. instead of printing the user output in the following way:
+Our first task was to exploit program using \emph{printf} method for formatted string output in a vulnerable way. We followed instructions of lab assignment  \url{http://www.cis.syr.edu/~wedu/seed/Labs/Vulnerability/Format_String/}
+and used Ubuntu 9.10 SEED for our lab set up.
+
+In the target program provided, a \emph{printf} method was used without any format specifier, combined with the ability for users to specify input, allowed user to fabricate any format specifier for the program, i.e. instead of printing the user output in the following way:
 \vspace{1em}
 \lstset{
 	captionpos=b,
@@ -78,7 +81,7 @@ printf(user_input);
 
 \subsection{Exploiting the vulnerability}
 
-Being able to specify the string format specifier allows as to use \emph{printf} method in order to either crash a program, look up values on stack and memory and even modify content at specific memory locations with a specified value. We used the following features of \emph{printf} specifier string:
+Being able to specify the string format specifier allows us to use \emph{printf} method in order to either crash a program, look up values on stack and memory and even modify content at specific memory locations with a specified value. We used the following features of \emph{printf} specifier string:
 \begin{itemize}
 	\item \%x - prints hexadecimal value provided in the arguments list
 	\item \%s - prints value at the current memory location from the heap provided by arugments list
@@ -86,7 +89,7 @@ Being able to specify the string format specifier allows as to use \emph{printf}
 \end{itemize}
 It's important to realize that argument list for printf would be kept on the stack. Therefore we can use \emph{printf} to traverse the stack using for instance many \%x in the input string.
 
-\subsection{Crashing the program}
+\subsubsection{Crashing the program}
 In order to crash the program it was enough to provide a string as input that contained a few "\%s". This way values popped from the stack would be provided to the \emph{printf} method and memory address at the locations specified by the values. At some point we would try access memory that the process couldn't access which results in a segmentation fault and a crash of the program.
 \vspace{1em}
 \lstset{
@@ -107,10 +110,36 @@ Please enter a string
 Segmentation fault
 \end{lstlisting}
 
-\subsection{Printing out specified memory from heap}
-In the second part of this task we wanted to be able to provide such a format specifier that would allow us to print out some specified memory location. In this example we wanted to print out value of two-element array secret.
+\subsubsection{Printing out specified memory from heap}
+In the second part of this task we wanted to be able to provide such a format specifier that would allow us to print out some specified memory location. In this example we wanted to print out value of two-element array secret. Because provided vulnerable program to exploit prints out the address of both secrets values on the heap, we know where to look for them. We need to use \texttt{\%s} format specifier to access memory location of 
+\texttt{secret} array. We ask to print six values from the stack, and the next variable on the stack would contain address to the first element of secret. However, secret is on the heap, so it's not to easy to access the second element of the array. We used the fact that a user is also prompted to input the decimal integer. Hence at runtime we can see where \texttt{secret[1]} is, and provide this value to be stored in \texttt{int\_input} integer variable. Now since that value is on the stack, after poping initial 5 values, if we also add \texttt{\%s.\%s} in the format specifier string, we tell \texttt{printf} to show us memory content at next two memory locations, specified by the contents of next two values on the stack, which corresponds to \texttt{secret[1]} and \texttt{secret[0]} and in the output below we can see that U and D are printed. These two characters have ASCII values of 0x55 and 0x44 which is what we wanted.
 
-\subsection{Changing values in memory}
+\vspace{1em}
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=BASH,
+	caption=Example of printing out memory,
+	label=printf:crash
+}
+\begin{lstlisting}
+seed@seed-desktop:~/cwk2$ ./vul
+The variable secret’s address is 0xbf8b258c (on stack)
+The variable secret’s value is 0x 95fd008 (on heap)
+secret[0]’s address is 0x 95fd008 (on heap)
+secret[1]’s address is 0x 95fd00c (on heap)
+Please enter a decimal integer
+157274124
+Please enter a string
+%x.%x.%x.%x.%x.%s.%s   
+bf8b2590.bf8b2610.bf8b2604.0.0.U.D
+The original secrets: 0x44 -- 0x55
+The new secrets:      0x44 -- 0x55
+\end{lstlisting}
+
+\subsubsection{Changing the value of \texttt{secret[1]}}
+
+\subsubsection{Changing the value of \texttt{secret[1]} to a pre-determined value}
 
 
 
