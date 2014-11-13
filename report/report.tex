@@ -67,6 +67,7 @@ In the target program provided, a \emph{printf} method was used without any form
 	captionpos=b,
 	frame=single,
 	language=C,
+  breaklines=true,
 	caption=Fragment of code that would not include the vulnerability,
 	label=chroot:vul
 }
@@ -82,6 +83,7 @@ the \emph{printf} was used without explicitly specifying that we want to print t
 	captionpos=b,
 	frame=single,
 	language=C,
+  breaklines=true,
 	caption=Fragment of includes the vulnerability,
 	label=chroot:vul2
 }
@@ -110,6 +112,7 @@ In order to crash the program it was enough to provide a string as input that co
 	captionpos=b,
 	frame=single,
 	language=BASH,
+  breaklines=true,
 	caption=Example of crashing the program,
 	label=printf:crash
 }
@@ -133,6 +136,7 @@ In the second part of this task we wanted to be able to provide such a format sp
 	captionpos=b,
 	frame=single,
 	language=BASH,
+  breaklines=true,
 	caption=Example of printing out memory,
 	label=printf:crash
 }
@@ -197,6 +201,7 @@ The new secrets:      0x44 -- 0x55
 \lstset{
   captionpos=b,
   frame=single,
+  breaklines=true,
   emph={module, import, create, schema, as, @Name, @Description, select, from, win:time},
   emphstyle={\color{red}\bfseries},
   caption=EPL file example.,
@@ -253,6 +258,7 @@ It is possible to gain root privileges using \texttt{/tmp/su}
   captionpos=b,
   frame=single,
   language=bash,
+  breaklines=true,
   caption=Kill processes outside of chroot jail.,
   label=chroot:kill
 }
