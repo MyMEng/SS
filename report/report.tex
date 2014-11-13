@@ -86,7 +86,7 @@ Being able to specify the string format specifier allows us to use \texttt{print
 \begin{itemize}
 	\item \texttt{\%x} - prints hexadecimal value provided in the arguments list
 	\item \texttt{\%s} - prints value at the current memory location from the heap provided by arguments list
-	\item \texttt{\%w} - writes number of bytes written so far to the output at the current location provided by arguments list
+	\item \texttt{\%n} - writes number of bytes written so far to the output at the current location provided by arguments list
 \end{itemize}
 It's important to realize that argument list for printf would be kept on the stack. Therefore we can use \texttt{printf} to traverse the stack using for instance many \texttt{\%x} in the input string.
 
@@ -114,7 +114,7 @@ Segmentation fault
 
 \subsubsection{Printing out specified memory from heap}
 In the second part of this task we wanted to be able to provide such a format specifier that would allow us to print out some specified memory location. In this example we wanted to print out value of two-element array secret. Because provided vulnerable program to exploit prints out the address of both secrets values on the heap, we know where to look for them. We need to use \texttt{\%s} format specifier to access memory location of 
-\texttt{secret} array. We ask to print six values from the stack, and the next variable on the stack would contain address to the first element of secret. However, secret is on the heap, so it's not to easy to access the second element of the array. We used the fact that a user is also prompted to input the decimal integer. Hence at runtime we can see where \texttt{secret[1]} is, and provide this value to be stored in \texttt{int\_input} integer variable. Now since that value is on the stack, after poping initial 5 values, if we also add \texttt{\%s.\%s} in the format specifier string, we tell \texttt{printf} to show us memory content at next two memory locations, specified by the contents of next two values on the stack, which corresponds to \texttt{secret[1]} and \texttt{secret[0]} and in the output below we can see that U and D are printed. These two characters have ASCII values of 0x55 and 0x44 which is what we wanted.
+\texttt{secret} array. We ask to print six values from the stack, and the next variable on the stack would contain address to the first element of secret. However, secret is on the heap, so it's not to easy to access the second element of the array. We used the fact that a user is also prompted to input the decimal integer. Hence at runtime we can see where \texttt{secret[1]} is, and provide the address of \texttt{secret[1]} on heap, in decimal format, to be stored in \texttt{int\_input} integer variable. Now since that value is on the stack, after poping initial 5 values, if we also add \texttt{\%s.\%s} in the format specifier string, we tell \texttt{printf} to show us memory content at next two memory locations, specified by the contents of next two values on the stack, which corresponds to \texttt{secret[1]} and \texttt{secret[0]} and in the output below we can see that U and D are printed. These two characters have ASCII values of 0x55 and 0x44 which is what we wanted.
 
 \vspace{1em}
 \lstset{
@@ -140,6 +140,32 @@ The new secrets:      0x44 -- 0x55
 \end{lstlisting}
 
 \subsubsection{Changing the value of \texttt{secret[1]}}
+
+In order to change value of the second element of \texttt{secret} array, similar approach must be taken as for printing it, i.e. we provide address of the value that interests us to be stored int \texttt{int\_input} variable, then we must pop elements of the stack by providing format specifier with a number of \texttt{\%x}s, and then instead of printing value of heap memory in location contained in the next element on the stack, we can use \texttt{\%n} to write modify the memory location. Example is shown in listing~\ref{printf:change}. As we can see, we are able to change the value of the secret from 0x55 to 0x1a.
+
+\vspace{1em}
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=BASH,
+	caption=Example of printing out memory,
+	label=printf:change,
+	breaklines=true,
+}
+\begin{lstlisting}
+seed@seed-desktop:~/cwk2$ ./vul
+The variable secret’s address is 0xbf83550c (on stack)
+The variable secret’s value is 0x 9448008 (on heap)
+secret[0]’s address is 0x 9448008 (on heap)
+secret[1]’s address is 0x 944800c (on heap)
+Please enter a decimal integer
+155484172
+Please enter a string
+%x%x%x%x%x%n
+bf835510bf835590bf83558400
+The original secrets: 0x44 -- 0x55
+The new secrets:      0x44 -- 0x1a
+\end{lstlisting}
 
 \subsubsection{Changing the value of \texttt{secret[1]} to a pre-determined value}
 
