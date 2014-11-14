@@ -554,8 +554,30 @@ sh-3.2#
 
 \subsection{Address Randomization}
 
-\lipsum[2]
+We were also able to show that we can obtain root access when address space randomization is turned on. Our exploit produced a file that contains address that will be placed on stack in place of return address for \texttt{bof} method. However this address was our educated guess, and now this guess is incorrect in most case. However the address space is finite, so at some point we might be lucky and our guess will be correct and the address we chose becomes valid. So it is enough to run the vulnerable program in a loop, until the random address is good enough for us. In most cases the program crashes, as we try to jump into memory location that is not permitted, but sooner or later we succeed.
 
+\vspace{1em}
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=BASH,
+	breaklines=true,
+	caption=Getting root access with address space randomization,
+	label=bof:loop,
+}
+\begin{lstlisting}
+seed@seed-desktop:~/buffer$ sh -c "while [ 1 ]; do ./stack; done;"
+
+# Skipped some lines
+
+sh: line 1:  4145 Segmentation fault      ./stack
+sh: line 1:  4146 Segmentation fault      ./stack
+sh: line 1:  4147 Segmentation fault      ./stack
+sh-3.2# 
+
+\end{lstlisting}
+
+In order to maximize the chance of being lucky and minimize the number of attempts required to succeed, we used the fact that our buffer is 517 bytes long and placed the shell code at the very end of it. The remaining space of buffers is full of NOPs, so we leave many places to which we can "jump" into and reach our shell code.
 
 \subsection{Stack Guard}
 
