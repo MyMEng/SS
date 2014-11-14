@@ -45,6 +45,8 @@
 \end{center}
 
 \section{Introduction}
+In this paper we present exploiting vulnerabilities in: \texttt{C} string formatting, \texttt{chroot} command/system call, and \texttt{C} buffer overflow.\\
+\textbf{Table~\ref{tab:SoC}} shows contribution to this study per author.
 
 \begin{center}
   \begin{table}[h]
@@ -445,10 +447,14 @@ done
 
 \subsection{Securing \texttt{chroot}}
 \begin{description}
-  \item[In-jail non-root shell] majority of harm to the system is done by gaining root privileges inside the jail.
-  \item[Remove permissions on exiting jail] 
-  \item[Files in the jail owned by root] 
-  \item[Minimise commands available in in jail] minimise .
+  \item[In-jail non-root shell]---majority of harm to the system is done by gaining root privileges inside the jail.
+  \item[Remove permissions on leaving jail]---make sure that all permissions set by user in jail are reset to default values on exit and disable \texttt{setuid} family of commands and system calls.
+  \item[Prevent \texttt{chroot} below current directory]---enforce changing directory to jail-one while calling \texttt{chroot} i.e.\ \texttt{chdir(dir); chroot(dir);}.
+  \item[Minimise number of commands and files available in jail].
+  \item[Files in the jail owned by root]---if root owns the files user does not have access to them, hence cannot tamper with them.
+  \item[Limited permissions]---cut down all files permissions in jail as much as possible.
+  \item[No links inside jail]---hard links can be accessed from within the jail and any alterations made via such links will carry on to the system.
+  \item[Close all unnecessary file descriptors prior to entering the jail].
 \end{description}
 
 \section{Buffer overflow}
@@ -532,8 +538,10 @@ root
 
 
 \section{Conclusions}
+Presented here attacks show how user can make harm to the system or gain \texttt{root} privileges by exploiting vulnerabilities in: \texttt{C} string formatting, \texttt{chroot} command/system call, and \texttt{C} buffer overflow. Majority of exploits presented here has already been accessed in never versions of Linux kernel or \texttt{C} language, nevertheless, many embedded systems like: internet cameras, NASes, and routers still use vulnerable software facilitating aforementioned attacks.
 
-\newpage
+
+\vfill
 \bibliographystyle{plain}
 \bibliography{ref}
 
