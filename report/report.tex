@@ -76,9 +76,9 @@ In the target program provided, a \emph{printf} method was used without any form
 	label=chroot:vul
 }
 \begin{lstlisting}
-// Get input from user
+/* Get input from user */
 scanf("%s", &user_input);
-// Print what user typed
+/* Print what user typed */
 printf("%s", user_input);
 \end{lstlisting}
 the \emph{printf} was used without explicitly specifying that we want to print to standard output a string.
@@ -92,9 +92,9 @@ the \emph{printf} was used without explicitly specifying that we want to print t
 	label=chroot:vul2
 }
 \begin{lstlisting}
-// Get input from user
+/* Get input from user */
 scanf("%s", &user_input);
-// Print what user typed
+/* Print what user typed */
 printf(user_input);
 \end{lstlisting}
 
