@@ -469,12 +469,12 @@ The vulnerable code we were given, was reading input from a file called \texttt{
 \begin{lstlisting}
 int bof(char *str)
 {
-	char buffer[12];
+  char buffer[12];
 
-	/* The following statement has a buffer overflow problem */ 
-	strcpy(buffer, str);
+  /* The following statement has a buffer overflow problem */ 
+  strcpy(buffer, str);
 
-	return 1;
+  return 1;
 }
 \end{lstlisting}
 In the vulnerable program, a buffer that is 517 bytes in size is passed to the method \texttt{bof} and then the method copies the entire buffer into a variable \texttt{buffer}, which is likely overflow the buffer and thus overwrite the content of the stack.
