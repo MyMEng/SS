@@ -77,7 +77,7 @@ In each subtask we explain the cause of a vulnerability, show how to perform a p
 
 \section{String formatting}
 
-Our first task was to exploit program using \emph{printf} method for formatted string output in a vulnerable way. We followed instructions of lab assignment  \url{http://www.cis.syr.edu/~wedu/seed/Labs/Vulnerability/Format_String/}
+Our first task was to exploit a program using \emph{printf} method for formatted string output in a vulnerable way. We followed instructions of lab assignment  \url{http://www.cis.syr.edu/~wedu/seed/Labs/Vulnerability/Format_String/}
 and used Ubuntu 9.10 SEED for our lab set up.
 
 In the target program provided, a \emph{printf} method was used without any format specifier, combined with the ability for users to specify input, allowed user to fabricate any format specifier for the program, i.e. instead of printing the user output in the following way:
@@ -97,7 +97,7 @@ scanf("%s", &user_input);
 /* Print what user typed */
 printf("%s", user_input);
 \end{lstlisting}
-the \emph{printf} was used without explicitly specifying that we want to print to standard output a string.
+the \emph{printf} was used without explicitly specifying that we want to print a string to the standard output.
 \vspace{1em}
 \lstset{
 	captionpos=b,
@@ -117,16 +117,16 @@ printf(user_input);
 
 
 \subsection{Exploiting the vulnerability}
-Being able to specify the string format specifier allows us to use \texttt{printf} method in order to either crash a program, look up values on stack and memory and even modify content at specific memory locations with a specified value. We used the following features of \texttt{printf} specifier string:
+Being able to provide a string format specifier allows us to use \texttt{printf} method in order to either crash a program, look up values on stack and memory and even modify content at specific memory locations with a specified value. We used the following features of \texttt{printf} specifier string:
 \begin{itemize}
 	\item \texttt{\%x} - prints hexadecimal value provided in the arguments list
 	\item \texttt{\%s} - prints value at the current memory location from the heap provided by arguments list
 	\item \texttt{\%n} - writes number of bytes written so far to the output at the current location provided by arguments list
 \end{itemize}
-It's important to realize that argument list for printf would be kept on the stack. Therefore we can use \texttt{printf} to traverse the stack using for instance many \texttt{\%x} in the input string.
+It is important to realize that argument list for printf would be kept on the stack. Not having these arguments on the stack will cause printf to pop values of the stack memory, that we didn't intend to change. Therefore we can use \texttt{printf} to traverse the stack using for instance many \texttt{\%x} in the input string.
 
 \subsubsection{Crashing the program}
-In order to crash the program it was enough to provide a string as input that contained a few \texttt{\%s}. This way values popped from the stack would be provided to the \texttt{printf} method and memory address at the locations specified by the values. At some point the program attempts to access memory that the process shouldn't be able to. This results in a segmentation fault and a crash of the program.
+In order to crash the program it was enough to provide a string as input that contained a few \texttt{\%s}. This way values popped from the stack would be provided to the \texttt{printf} method and memory address at the locations specified by the values would be accessed. At some point the program attempts to access memory that the process shouldn't be able to. This results in a segmentation fault and a crash of the program.
 
 \vspace{1em}
 \lstset{
@@ -150,8 +150,7 @@ Segmentation fault
 \end{lstlisting}
 
 \subsubsection{Printing out specified memory from heap}
-In the second part of this task we wanted to be able to provide such a format specifier that would allow us to print out some specified memory location. In this example we wanted to print out value of two-element array secret. Because provided vulnerable program to exploit prints out the address of both secrets values on the heap, we know where to look for them. We need to use \texttt{\%s} format specifier to access memory location of 
-\texttt{secret} array. We ask to print six values from the stack, and the next variable on the stack would contain address to the first element of secret. However, secret is on the heap, so it's not to easy to access the second element of the array. We used the fact that a user is also prompted to input the decimal integer. Hence at runtime we can see where \texttt{secret[1]} is, and provide the address of \texttt{secret[1]} on heap, in decimal format, to be stored in \texttt{int\_input} integer variable. Now since that value is on the stack, after poping initial 5 values, if we also add \texttt{\%s.\%s} in the format specifier string, we tell \texttt{printf} to show us memory content at next two memory locations, specified by the contents of next two values on the stack, which corresponds to \texttt{secret[1]} and \texttt{secret[0]} and in the output below we can see that U and D are printed. These two characters have ASCII values of 0x55 and 0x44 which is what we wanted.
+In the second part of this task we wanted to be able to provide such a format specifier that would allow us to print out some specified memory location. We could imagine such an attack could be used to, for example, recover a password stored in the memory. In this case we wanted to print out value of two-element array called \texttt{secret}. Because provided vulnerable program prints out the address of both secrets values on the heap, we know where to look for them. We need to use \texttt{\%s} format specifier to access memory location of the \texttt{secret} array. We ask to print (and pop) six values from the stack using \texttt{\%x}, and the next variable on the stack would contain address to the first element of secret. However, secret is on the heap, so it's not to easy to access the second element of the array. We used the fact that a user is also prompted to input the decimal integer. Hence at runtime we can see where \texttt{secret[1]} is, and provide the address of \texttt{secret[1]} on heap, in decimal format, to be stored in \texttt{int\_input} integer variable. Now since that value is on the stack, after poping initial 5 values, if we also add \texttt{\%s.\%s} in the format specifier string, we tell \texttt{printf} to show us memory content at next two memory locations, specified by the contents of next two values on the stack, which correspond to \texttt{secret[1]} and \texttt{secret[0]} and in the output below we can see that U and D are printed. These two characters have ASCII values of 0x55 and 0x44 which is what we wanted.
 
 \vspace{1em}
 \lstset{
@@ -180,7 +179,7 @@ The new secrets:      0x44 -- 0x55
 
 \subsubsection{Changing the value of \texttt{secret[1]}}
 
-In order to change value of the second element of \texttt{secret} array, similar approach must be taken as for printing it, i.e. we provide address of the value that interests us to be stored int \texttt{int\_input} variable, then we must pop elements of the stack by providing format specifier with a number of \texttt{\%x}s, and then instead of printing value of heap memory in location contained in the next element on the stack, we can use \texttt{\%n} to write modify the memory location. Example is shown in listing~\ref{printf:change}. As we can see, we are able to change the value of the secret from 0x55 to 0x1a.
+In order to change value of the second element of \texttt{secret} array, similar approach must be taken as for printing it, i.e. we provide address of the value that interests us to be stored int \texttt{int\_input} variable, then we must pop elements of the stack by providing format specifier with a number of \texttt{\%x}s, and then instead of printing value of heap memory in location contained in the next element on the stack, we can use \texttt{\%n} to modify the memory location. Example is shown in listing~\ref{printf:change}. As we can see, we are able to change the value of the secret from 0x55 to 0x1a.
 
 \vspace{1em}
 \lstset{
@@ -209,7 +208,9 @@ The new secrets:      0x44 -- 0x1a
 
 \subsubsection{Changing the value of \texttt{secret[1]} to a pre-determined value}
 
-If we wanted to change \texttt{secret[1]} to a pre-determined value, we need to know exactly what \texttt{\%n} format specifier does. We know it prints a number of bytes printed in output so far into memory location on the heap determined by the current value on the top of the stack. We can see in~\ref{printf:change} that we changed the secret to 0x1a, or 26 in decimal, and before that we printed "bf835510bf835590bf83558400" which is exactly 26 one-byte wide characters. This is the minimum value we can set it to, however if we add more characters, we can keep increasing the number that will be stored in \texttt{secret[1]} until we reach desired value. For instance, if we wanted to change the value to 30 (or 0x1E), we need to stick four more characters into the format specifier string as shown in~\ref{printf:change2} where we added "AAAA".  
+If we wanted to change \texttt{secret[1]} to a pre-determined value, we need to know exactly what \texttt{\%n} format specifier does. We know it prints a number of bytes printed in output so far into memory location on the heap determined by the current value on the top of the stack. We can see in~\ref{printf:change} that we changed the secret to 0x1a, or 26 in decimal, and before that we printed "bf835510bf835590bf83558400" which is exactly 26 one-byte wide characters. This is the minimum value we can set it to, however if we add more characters, we can keep increasing the number that will be stored in \texttt{secret[1]} until we reach desired value. For instance, if we wanted to change the value to 30 (or 0x1E), we need to stick four more characters into the format specifier string as shown in~\ref{printf:change2} where we added "AAAA".
+
+Such an attack could be potentially dangerous, because we could e.g. change values of some conditional flags or even modify return values stored on the stack and jump to some malicious code injected beforehand.
 
 \vspace{1em}
 \lstset{
@@ -240,9 +241,9 @@ The new secrets:      0x44 -- 0x1e
 
 Last part of the task was to show if we can perform the four task we executed before if we didn't have the extra \texttt{scanf} method that allows us to store an integer from user input into \texttt{int\_input} variable in the vulnerable program.
 
-Not having the additional user input doesn't stop us from injecting our desired address into the \texttt{user\_input} array that we use in the second \texttt{scanf}. However we could not specify address from the keyboard, because letters and number of the address would be transformed into ASCII characters, which is not what we need.
+Not having the additional user input doesn't stop us from injecting our desired address into the \texttt{user\_input} char array that we fill in using the second \texttt{scanf}. However we could not specify address from the keyboard, because letters and number of the address would be transformed into ASCII characters, which is not what we need.
 
-We used, however, a program \texttt{write\_file.c} so it can prepare input for us that will contain the address at the beginning.
+We used, instead, a program \texttt{write\_file.c} so that it can prepare an input for us that will contain the address at the beginning.
 
 \vspace{1em}
 \lstset{
@@ -269,6 +270,7 @@ int main()
   *address = 0x0804b01c;
   
   /* Getting the rest of the format string */
+  /* Move by 4 bytes, because we already took it */
   scanf("%s", buf+4);
   size = strlen(buf+4) + 4;
   printf("The string length is %d\n", size);
@@ -312,7 +314,7 @@ The original secrets: 0x44 -- 0x55
 The new secrets:      0x44 -- 0x55
 \end{lstlisting}
 
-In the listing~\ref{printf:writefile1} we can see that we run program \texttt{write\_string} which creates and writes into a file called 'mystring'. The program asks the user for input what makes it possible to provide the rest of format specifier as in previous the part of this task. Then we use the file as standard input to the vulnerable program. First four bytes of \texttt{user\_input} now will contain the address of \texttt{secret[1]} which we hardcoded at the beginning of the file and the rest will be the format specifier for \texttt{printf}. NB now we have to pop more values off the stack, because \texttt{user\input} is defined at the beginning of the method so it gets pushed to the stack earlier. As the result, when \texttt{user\_input} is at top of the stack and \texttt{printf} 'executes' \texttt{\%s} we print the location stored at the beginning of this buffer. In the similar way we can overwrite memory at specified location, simply by providing similar format specifier as in previous part, i.e. containing \texttt{\%n}.
+In the listing~\ref{printf:writefile1} we can see that we run program \texttt{write\_string} which creates and writes into a file called 'mystring'. The program asks the user for input what makes it possible to provide the rest of format specifier as in previous the part of this task. Then we use the file as standard input to the vulnerable program. First four bytes of \texttt{user\_input} now will contain the address of \texttt{secret[1]} which we hardcoded at the beginning of the file and the rest will be the format specifier for \texttt{printf}. NB now we have to pop more values off the stack, because \texttt{user\input} is defined at the beginning of the method so it gets pushed to the stack earlier. As the result, when \texttt{user\_input} is at top of the stack and \texttt{printf} 'executes' \texttt{\%s}, meaning it prints the memory at the location specified by the value stored at the beginning of this buffer. In the similar way we can overwrite memory at specified location, simply by providing similar format specifier as in previous part, i.e. containing \texttt{\%n}.
 
 \vspace{1em}
 \lstset{
@@ -338,7 +340,6 @@ bffff4ec.bffff560.bffff554.bffff5f4.0.0.bffff5a0.b7fff670.80482bf.804b018.ABCD
 The original secrets: 0x44 -- 0x55
 The new secrets:      0x44 -- 0x52
 \end{lstlisting}
-
 
 
 \section{\texttt{chroot} vulnerability}
