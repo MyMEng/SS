@@ -46,6 +46,7 @@
 
 \section{Introduction}
 In this paper we present exploiting vulnerabilities in: \texttt{C} string formatting, \texttt{chroot} command/system call, and \texttt{C} buffer overflow.\\
+In each subtask we address cause of vulnerability, potential attack, and reflection on created risk. Methods used to exploit these weaknesses are described in depth; algorithms, code, input, and output are included for clarity.\\
 \textbf{Table~\ref{tab:SoC}} shows contribution to this study per author.
 
 \begin{center}
@@ -53,8 +54,21 @@ In this paper we present exploiting vulnerabilities in: \texttt{C} string format
     \begin{tabular}{ l | p{8.5cm} | c }
       Group member ID & Contribution outline & Contribution \\
       \hline
-      ks1591 & jhkljhkhkj hklhkhkljhkhjkh kjhkhjkhkj hhhhhhjkjkhhj khjgghtfyu jhgghcfgj tytyd & 50\% \\
-      mk0932 & jhkljhkhkjhklh  khkljhkhjkhkjhk hjkhkjhhhh hhjkjkhhjkhjg ghtfyujhgg hcfgjtyty d & 50\% \\
+      ks1591 &
+      \begin{itemize}
+        \item setting up lab environment on personal computer,
+        \item creating report template,
+        \item background reading,
+        
+      \end{itemize}
+      & 50\% \\
+      mk0932 &
+      \begin{itemize}
+        \item setting up lab environment on personal computer,
+        \item setting up git repository for coursework files,
+        \item background reading,
+      \end{itemize}
+      & 50\% \\
     \end{tabular}
     \caption{Statement of contribution.\label{tab:SoC}}
   \end{table}
@@ -73,7 +87,8 @@ In the target program provided, a \emph{printf} method was used without any form
 	language=C,
   breaklines=true,
 	caption=Fragment of code that would not include the vulnerability,
-	label=chroot:vul
+	label=chroot:vul,
+  float=tb
 }
 \begin{lstlisting}
 // Get input from user
@@ -89,7 +104,8 @@ the \emph{printf} was used without explicitly specifying that we want to print t
 	language=C,
   breaklines=true,
 	caption=Fragment of includes the vulnerability,
-	label=chroot:vul2
+	label=chroot:vul2,
+  float=tb
 }
 \begin{lstlisting}
 // Get input from user
@@ -118,7 +134,8 @@ In order to crash the program it was enough to provide a string as input that co
 	language=bash,
   breaklines=true,
 	caption=Example of crashing the program,
-	label=printf:crash
+	label=printf:crash,
+  float=tb
 }
 \begin{lstlisting}
 seed@seed-desktop:~/cwk2$ ./a.out 
@@ -142,7 +159,8 @@ In the second part of this task we wanted to be able to provide such a format sp
 	language=bash,
   breaklines=true,
 	caption=Example of printing out memory,
-	label=printf:crash
+	label=printf:crash,
+  float=tb
 }
 \begin{lstlisting}
 seed@seed-desktop:~/cwk2$ ./vul
@@ -171,6 +189,7 @@ In order to change value of the second element of \texttt{secret} array, similar
 	caption=Example of overwriting memory,
 	label=printf:change,
 	breaklines=true,
+  float=tb
 }
 \begin{lstlisting}
 seed@seed-desktop:~/cwk2$ ./vul
@@ -199,6 +218,7 @@ If we wanted to change \texttt{secret[1]} to a pre-determined value, we need to 
 	caption=Example of overwriting memory with a specified value,
 	label=printf:change2,
 	breaklines=true,
+  float=tb
 }
 \begin{lstlisting}
 seed@seed-desktop:~/cwk2$ ./vul
@@ -231,6 +251,7 @@ We used, however, a program \texttt{write\_file.c} so it can prepare input for u
 	caption=Example of overwriting memory with a specified value,
 	label=printf:writefilec,
 	breaklines=true,
+  float=tb
 }
 \begin{lstlisting}
 #include <sys/stat.h>
@@ -273,6 +294,7 @@ After turning off address randomization, we had to add an extra memory allocatio
 	caption=Example of printing memory using a file as standard input,
 	label=printf:writefile1,
 	breaklines=true,
+  float=tb
 }
 \begin{lstlisting}
 seed@seed-desktop:~/cwk2$ ./write_string
@@ -299,6 +321,7 @@ In the listing~\ref{printf:writefile1} we can see that we run program \texttt{wr
 	caption=Example of overwriting memory with a specified value using a file as standard input,
 	label=printf:writefile2,
 	breaklines=true,
+  float=tb
 }
 \begin{lstlisting}
 seed@seed-desktop:~/cwk2$ ./write_string
@@ -318,7 +341,7 @@ The new secrets:      0x44 -- 0x52
 
 
 \section{\texttt{chroot} vulnerability}
-This section describes \texttt{chroot} vulnerability. Useful insight is presented in~\cite{chroot}.
+This section addresses \texttt{chroot} vulnerability described in \url{http://www.cis.syr.edu/~wedu/seed/Labs/Vulnerability/Chroot/}. Useful insight for this section is presented in~\cite{chroot}.
 
 \subsection{Understanding how \texttt{chroot} works}
 \subsubsection{Symbolic link}
@@ -350,7 +373,8 @@ These operations facilitate gaining \texttt{root} privileges within jail using s
   captionpos=b,
   frame=single,
   caption=\texttt{shadow} file in jail.,
-  label=chroot:shadow
+  label=chroot:shadow,
+  float=tb
 }
 \begin{lstlisting}
 root:$6$5MfvmFOaDU$CVt7jU9wJRYz3K98EklAJqp8RMG5NvReUSVK7ctVvc2VOn
@@ -363,7 +387,8 @@ root:$6$5MfvmFOaDU$CVt7jU9wJRYz3K98EklAJqp8RMG5NvReUSVK7ctVvc2VOn
   language=bash,
   breaklines=true,
   caption=\texttt{passwd} file in jail.,
-  label=chroot:passwd
+  label=chroot:passwd,
+  float=tb
 }
 \begin{lstlisting}
 root:x:0:0:root:/root:/bin/bash
@@ -380,7 +405,8 @@ After leaving \texttt{chroot} jail we execute this program and gain root privile
   language=C,
   breaklines=true,
   caption=Simple \texttt{C} code allowing to regain \texttt{root} privileges.,
-  label=chroot:regainingroot
+  label=chroot:regainingroot,
+  float=tb
 }
 \begin{lstlisting}
 int main(){
@@ -431,7 +457,8 @@ It is possible to kill processes outside of \texttt{chroot} jail as both the jai
   language=bash,
   breaklines=true,
   caption=Kill processes outside of chroot jail.,
-  label=chroot:kill
+  label=chroot:kill,
+  float=tb
 }
 \begin{lstlisting}
 #!/bin/bash
@@ -474,6 +501,7 @@ The vulnerable code we were given, was reading input from a file called \texttt{
 	breaklines=true,
 	caption=Function with buffer overflow vulnerability,
 	label=bof1,
+  float=tb
 }
 \begin{lstlisting}
 int bof(char *str)
@@ -510,6 +538,7 @@ We discovered where we want to put our address in order to force the \texttt{bof
 	breaklines=true,
 	caption=Function with buffer overflow vulnerability,
 	label=bof:root1,
+  float=tb
 }
 \begin{lstlisting}
 seed@seed-desktop:~/buffer$ ./exploit 
@@ -539,6 +568,7 @@ As it turns out, Bash shell has implemented a protection mechanism. If the curre
 	breaklines=true,
 	caption=Function with buffer overflow vulnerability,
 	label=bof:root2,
+  float=tb
 }
 \begin{lstlisting}
 seed@seed-desktop:~/buffer$ ./exploit 
@@ -566,6 +596,7 @@ We were also able to show that we can obtain root access when address space rand
 	breaklines=true,
 	caption=Getting root access with address space randomization,
 	label=bof:loop,
+  float=tb
 }
 \begin{lstlisting}
 seed@seed-desktop:~/buffer$ sh -c "while [ 1 ]; do ./stack; done;"
