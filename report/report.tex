@@ -581,12 +581,34 @@ In order to maximize the chance of being lucky and minimize the number of attemp
 
 \subsection{Stack Guard}
 
-\lipsum[2]
+Last stage of the assignment makes us create the vulnerable program with the stack protector described earlier enabled, i.e. no \texttt{-fno-stack-protector} flag is used during compilation. When we now try to run the program we can see that "stack smashing" was detected and the system aborts further execution as shown in the listing~\ref{app:bof:stackg}.
+\vspace{1em}
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=BASH,
+	breaklines=true,
+	caption=Stack smashing detected,
+	label=app:bof:stackg,
+}
+\begin{lstlisting}
+seed@seed-desktop:~/buffer$ ./stack 
+*** stack smashing detected ***: ./stack terminated
+======= Backtrace: =========
+/lib/tls/i686/cmov/libc.so.6(__fortify_fail+0x48)[0xb7fefda8]
+/lib/tls/i686/cmov/libc.so.6(__fortify_fail+0x0)[0xb7fefd60]
+./stack[0x8048513]
+[0x90909090]
+======= Memory map: ========
+08048000-08049000 r-xp 00000000 08:01 8403       /home/seed/buffer/stack
+08049000-0804a000 r--p 00000000 08:01 8403       /home/seed/buffer/stack
+0804a000-0804b000 rw-p 00001000 08:01 8403       /home/seed/buffer/stack
+\end{lstlisting}
 
+With stack protector turned on, GCC adds extra code at the beginning and end of the function to watch of buffer overflows and hence aborts if the guarding code detected any corruption to the stack\cite{gnu13}.
 
 \section{Conclusions}
 Presented here attacks show how user can make harm to the system or gain \texttt{root} privileges by exploiting vulnerabilities in: \texttt{C} string formatting, \texttt{chroot} command/system call, and \texttt{C} buffer overflow. Majority of exploits presented here has already been accessed in newer versions of Linux kernel or \texttt{C} language, nevertheless, many embedded systems like: internet cameras, NASes, and routers still use vulnerable software facilitating aforementioned attacks.
-
 
 \vfill
 \bibliographystyle{plain}
