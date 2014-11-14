@@ -45,6 +45,8 @@
 \end{center}
 
 \section{Introduction}
+In this paper we present exploiting vulnerabilities in: \texttt{C} string formatting, \texttt{chroot} command/system call, and \texttt{C} buffer overflow.\\
+\textbf{Table~\ref{tab:SoC}} shows contribution to this study per author.
 
 \begin{center}
   \begin{table}[h]
@@ -441,17 +443,22 @@ done
 \end{lstlisting}
 
 \subsubsection{Controlling processes with \texttt{ptrace()}}
-\texttt{ptrace()} system call can pause a process with given PID and introduce changes to its registers and memory locations. As mentioned above both system and jail share the PID namespace hence user from within the jail can alter properties of any process outside of the jail.
+\texttt{ptrace()} system call can pause a process with given PID and introduce changes to its registers and memory locations. As mentioned above both system and jail share the PID namespace hence user from within the jail can alter properties of any process outside of the jail.\\
+Using technique similar to one presented in \textbf{Section~\ref{sec:buffover}}, root privileges can be gained.
 
 \subsection{Securing \texttt{chroot}}
 \begin{description}
-  \item[In-jail non-root shell] majority of harm to the system is done by gaining root privileges inside the jail.
-  \item[Remove permissions on exiting jail] 
-  \item[Files in the jail owned by root] 
-  \item[Minimise commands available in in jail] minimise .
+  \item[In-jail non-root shell]---majority of harm to the system is done by gaining root privileges inside the jail.
+  \item[Remove permissions on leaving jail]---make sure that all permissions set by user in jail are reset to default values on exit and disable \texttt{setuid} family of commands and system calls.
+  \item[Prevent \texttt{chroot} below current directory]---enforce changing directory to jail-one while calling \texttt{chroot} i.e.\ \texttt{chdir(dir); chroot(dir);}.
+  \item[Minimise number of commands and files available in jail].
+  \item[Files in the jail owned by root]---if root owns the files user does not have access to them, hence cannot tamper with them.
+  \item[Limited permissions]---cut down all files permissions in jail as much as possible.
+  \item[No links inside jail]---hard links can be accessed from within the jail and any alterations made via such links will carry on to the system.
+  \item[Close all unnecessary file descriptors prior to entering the jail].
 \end{description}
 
-\section{Buffer overflow}
+\section{Buffer overflow\label{sec:buffover}}
 
 In our next lab assignment described at \url{http://www.cis.syr.edu/~wedu/seed/Labs/Vulnerability/Buffer_Overflow/} we were to exploit buffer overflow vulnerability in a given example program.
 
@@ -469,17 +476,17 @@ The vulnerable code we were given, was reading input from a file called \texttt{
 \begin{lstlisting}
 int bof(char *str)
 {
-	char buffer[12];
+  char buffer[12];
 
-	/* The following statement has a buffer overflow problem */ 
-	strcpy(buffer, str);
+  /* The following statement has a buffer overflow problem */ 
+  strcpy(buffer, str);
 
-	return 1;
+  return 1;
 }
 \end{lstlisting}
 In the vulnerable program, a buffer that is 517 bytes in size is passed to the method \texttt{bof} and then the method copies the entire buffer into a variable \texttt{buffer}, which is likely overflow the buffer and thus overwrite the content of the stack.
 
-\subsubsection{Exploiting the Vulnerability}
+\subsection{Exploiting the Vulnerability}
 
 Our first task was to try to exploit the vulnerability and gain root access to the machine. We could assume that the vulnerable program in \emph{Set-root-UID} mode. Moreover we could assume that it is compiled with a flag that disables stack protection (\texttt{-fno-stack-protector})~\cite{gnu13} and that virtual address space randomization is off.
 
@@ -491,8 +498,7 @@ Once the vulnerable program reads the shellcode from the input file into a buffe
 
 It is not enough, however, to inject the shellcode, because when the program finishes executing \texttt{bof} method, it returns (or at least attempts to return) to \texttt{main} method. The program might crash at this point and this is because there is a return address on the stack and we might overwrite it.
 
-So, our goal is to modify the return address in such a way, so that the program carries on execution not back in \texttt{main} method, but on the stack where our malicious shell code is. We copied the code of vulnerable program and examined the stack with GDB. We quickly discovered, that we could obviously ignore first 12 bytes, also we could next four bytes as they are first argument provided to the function which just a pointer in our case which is 4 bytes. Next two values are our return address and saved stack frame pointer, so in total we could skip 16 bytes and place our own "return address" there. Our exploit's code is shown in~\ref{bof:exploit1}. 
-
+So, our goal is to modify the return address in such a way, so that the program carries on execution not back in \texttt{main} method, but on the stack where our malicious shell code is. We copied the code of vulnerable program and examined the stack with GDB. We quickly discovered, that we could obviously ignore first 12 bytes, also we could next four bytes as they are first argument provided to the function which just a pointer in our case which is 4 bytes. Next two values are our return address and saved stack frame pointer, so in total we could skip 16 bytes and place our own "return address" there. Our exploit's code is shown in \textbf{Appendix~\ref{app:bof:exploit1}}.
 We discovered where we want to put our address in order to force the \texttt{bof} method to jump to our code upon returning from the function, however we now had to think what value of an address to write there. Because virtual space randomization is turned off, we could use the value of \text{buffer} array in the exploit as a reference. By trial and error we discovered that the the stack point points a bit further in the vulnerable program when executing the string copy method, therefore we hard coded a value by which we need to increase desired address. Also, most of the buffer is pre-filled with \texttt{NOP} instructions to which we jump on the stack, and then after executing many \texttt{NOP}s we reach our mallicious code and we can get root access as shown below in Listing~\ref{bof:root1}.
 \vspace{1em}
 \lstset{
@@ -516,7 +522,7 @@ root
 \end{lstlisting}
 
 
-\subsubsection{Protection in /bin/bash}
+\subsection{Protection in /bin/bash}
 
 Next step of our task was to test if we can use the exploit to get root access if
 the \texttt{/bin/sh} symbolic link pointed back to \texttt{/bin/bash} rather than Z-shell. It turned out that exploit could execute bash, however no root access was given even though the vulnerable program  process runs with the user ID set to 0 (root). 
@@ -546,19 +552,21 @@ root
 sh-3.2# 
 \end{lstlisting}
 
-\subsubsection{Address Randomization}
+\subsection{Address Randomization}
 
 \lipsum[2]
 
 
-\subsubsection{Stack Guard}
+\subsection{Stack Guard}
 
 \lipsum[2]
 
 
 \section{Conclusions}
+Presented here attacks show how user can make harm to the system or gain \texttt{root} privileges by exploiting vulnerabilities in: \texttt{C} string formatting, \texttt{chroot} command/system call, and \texttt{C} buffer overflow. Majority of exploits presented here has already been accessed in never versions of Linux kernel or \texttt{C} language, nevertheless, many embedded systems like: internet cameras, NASes, and routers still use vulnerable software facilitating aforementioned attacks.
 
-\newpage
+
+\vfill
 \bibliographystyle{plain}
 \bibliography{ref}
 
@@ -640,7 +648,7 @@ void print_current() {
 \end{lstlisting}
 
 
-\section{Buffer overflow exploits}
+\section{Buffer overflow exploits\label{app:bof:exploit1}}
 \lstset{
 	captionpos=b,
 	frame=single,
