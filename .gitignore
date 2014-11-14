@@ -7,4 +7,6 @@
 *.pdf
 *.toc
 *.out
-report/report.synctex.gz
+*.bbl
+*.blg
+*.gz
