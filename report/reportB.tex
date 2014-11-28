@@ -1,0 +1,111 @@
+\documentclass[12pt, a4paper, pdflatex]{article}
+
+\usepackage[top=1in, bottom=1in, left=1in, right=1in]{geometry}
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+\usepackage{lipsum}
+\usepackage[labelfont=bf]{caption}
+\usepackage[]{algorithm2e}
+\usepackage{listings}
+
+\renewcommand{\thesubsubsection}{\thesubsection.\alph{subsubsection})} %subsubsections with letters
+
+\usepackage{amsmath}
+\usepackage{amsfonts}    % fancy maths font
+\usepackage{mathrsfs}    % fancy maths font
+\usepackage{dsfont}      % indocator finction
+\usepackage{hyperref}
+\usepackage[page, toc]{appendix}
+\usepackage[usenames,dvipsnames]{color}
+
+% \newcommand{\ts}{\textsuperscript}
+% \usepackage{url}
+
+\begin{document}
+% \pagenumbering{gobble}% Remove page numbers
+
+\begin{center}
+\vspace*{\fill}
+% \begin{vplace}[1]
+  \Huge
+ \texttt{\textbf{PART B}}
+ % \end{vplace}
+
+\end{center}
+
+
+\begin{center}
+    \begin{large}
+    {\HRule \\[0.2cm]}
+    \textsc{Attacks on TCP/IP Protocols}
+    {\HRule \\[0.3cm]}
+    \end{large}
+
+    \begin{minipage}{ 0.49\textwidth }
+        \begin{flushleft}
+            Kacper \textbf{Sokol}---\texttt{ks1591}---4GGK1\\
+            Maciej \textbf{Kumorek}---\texttt{mk0934}---4G403\\
+        \end{flushleft}
+    \end{minipage}
+    \begin{minipage}{ 0.49\textwidth }
+        \begin{flushright}
+            {COMSM1500 $|$ Systems Security\\
+            Coursework: Part B---\today\\[0.3cm]}
+        \end{flushright}
+    \end{minipage}
+\end{center}
+\vspace*{\fill}
+
+\thispagestyle{empty}
+\newpage
+\setcounter{page}{1}
+
+\section{Introduction}
+In this paper we present exploiting vulnerabilities in: \texttt{C} string formatting, \texttt{chroot} command/system call, and \texttt{C} buffer overflow.\\
+In each subtask we explain the cause of a vulnerability, show how to perform a potential attack and we reflect on created risk. Methods used to exploit these weaknesses are described in depth; algorithms, code, input, and output are included for clarity.\\
+\textbf{Table~\ref{tab:SoC}} shows contribution to this study per author.
+
+\begin{center}
+  \begin{table}[h]
+    \begin{tabular}{ l | p{8.5cm} | c }
+      Group member ID & Contribution outline & Contribution \\
+      \hline
+      ks1591 &
+      \begin{itemize}
+        \item setting up lab environment on personal computer,
+        \item creating report template,
+        \item background reading,
+        \item joint work on each of the assignment with roughly equal contribution.
+      \end{itemize}
+      & 50\% \\
+      mk0934 &
+      \begin{itemize}
+        \item setting up lab environment on personal computer,
+        \item setting up git repository for coursework files,
+        \item background reading,
+        \item joint work on each of the assignment with roughly equal contribution.
+      \end{itemize}
+      & 50\% \\
+    \end{tabular}
+    \caption{Statement of contribution.\label{tab:SoC}}
+  \end{table}
+\end{center}
+
+\section{ARP cache poisoning}
+
+\section{Conclusions}
+Attacks presented here show how a user can make harm to the system or gain \texttt{root} privileges by exploiting vulnerabilities in: \texttt{C} string formatting, \texttt{chroot} command/system call, and \texttt{C} buffer overflow.
+
+Many of these vulnerabilities are created by programmers, often not realizing that they can open a way to overtake their systems. It makes us realize how important it is to use safe version of methods that manipulate with buffers and memory, especially in a low level programming where there is no extra level of abstraction provided by a virtual machine or some runtime.
+
+The vulnerabilities presented here have already been addressed in newer versions of Linux kernel or \texttt{C} compiler, nevertheless, many embedded systems like: Internet cameras, NASes, and routers still use vulnerable software facilitating aforementioned attacks. It proves that we need to force high coding standards, build and use static analysis tools, especially in applications and systems of high security.
+
+\vfill
+\bibliographystyle{plain}
+\bibliography{ref}
+
+\newpage
+\begin{appendices}
+
+\end{appendices}
+
+\end{document}
