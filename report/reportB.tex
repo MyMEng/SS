@@ -148,17 +148,43 @@ Such a setup can for example lead to captuing sensitive data that is unencrypted
 
 In this attack our task was to cause a Denial of Service using SYN flood attack. The SYN or synchronize request is send in a typical TCP protocol exchange in order to establish a connection. A client sends a SYN packet, receiving SYN-ACK acknowledgment from the server and confirms that the synchronization acknowledgment was recived by responding to the server with a ACK packet.
 
-In the attack, an attacker sends multiple SYN packets without responding to SYN-ACK. This is done by randomizing the IP address in the original SYN request, so that the response goes to nobody as a consequence. This causes the server to keep many 'half-open' connections.
+In the attack, an attacker sends multiple SYN packets without responding to SYN-ACK. This is done by randomizing the IP address in the original SYN request, so that the response goes to nobody as a consequence. This causes the server to keep many \'half-open\'' connections.
 
 
 \section{XSS attacks}
 
+\subsection{Writing an XSS Worm}
+
+After refreshing multiple times, the response contains an error message \"You cannot make another post so soon after your last; please try again in a short while.\" which is a mechanism in phpBB from preventing flooding message boards.
+
+
+\section{SQL injection attack}
+
+\subsection{Exploiting the vulnerability in login.php}
+
+We were able to login to Alice's account without knowing her password by inputing the following
+text into login input box: \texttt{alice' or \'1\'='1}. On the server side when this is applied
+to PHP code to form the SQL query, the query is changed into:
+
+\lstset{
+  captionpos=b,
+  frame=single,
+  language=PHP,
+  breaklines=true,
+  label=sql1
+}
+\begin{lstlisting}
+SELECT user_id, username, user_password, user_active, user_level,
+user_login_tries, user_last_login_try
+FROM USERS_TABLE
+WHERE username = ’alice’ or ’1’ = ’ AND user_password = ’md5($password)’;
+\end{lstlisting}
+
+
+
 \section{Conclusions}
-Attacks presented here show how a user can make harm to the system or gain \texttt{root} privileges by exploiting vulnerabilities in: \texttt{C} string formatting, \texttt{chroot} command/system call, and \texttt{C} buffer overflow.
 
-Many of these vulnerabilities are created by programmers, often not realizing that they can open a way to overtake their systems. It makes us realize how important it is to use safe version of methods that manipulate with buffers and memory, especially in a low level programming where there is no extra level of abstraction provided by a virtual machine or some runtime.
-
-The vulnerabilities presented here have already been addressed in newer versions of Linux kernel or \texttt{C} compiler, nevertheless, many embedded systems like: Internet cameras, NASes, and routers still use vulnerable software facilitating aforementioned attacks. It proves that we need to force high coding standards, build and use static analysis tools, especially in applications and systems of high security.
+Lorem ipsum
 
 \vfill
 \bibliographystyle{plain}
