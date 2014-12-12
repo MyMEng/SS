@@ -179,7 +179,8 @@ SELECT user_id, username, user_password, user_active, user_level,
 user_login_tries, user_last_login_try
 FROM USERS_TABLE
 WHERE username = ’alice’ OR 1' = ’1’ AND user_password = ’md5($password)’;
-\end{lstlisting}\\
+\end{lstlisting}
+
 This query successfully creates a new session for a user without the knowledge about the password.
 
 We tried injecting an update query too by inputing into the query
@@ -190,6 +191,9 @@ However, because MySQL prevents query stacking when using \texttt{mysql\_query} 
 
 \includegraphics[width=450px]{gfx/sql/updateerr.png}
 
+\subsection{Updating user profile}
+
+\texttt{Chaningbob' WHERE user\_id=4#}
 
 %Mention debug mode
 \section{Conclusions}
