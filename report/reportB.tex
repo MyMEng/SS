@@ -155,7 +155,7 @@ In the attack, an attacker sends multiple SYN packets without responding to SYN-
 
 \subsection{Writing an XSS Worm}
 
-After refreshing multiple times, the response contains an error message \"You cannot make another post so soon after your last; please try again in a short while.\" which is a mechanism in phpBB from preventing flooding message boards.
+After refreshing multiple times, the response contains an error message "You cannot make another post so soon after your last; please try again in a short while." which is a mechanism in phpBB from preventing flooding message boards.
 
 
 \section{SQL injection attack}
@@ -163,7 +163,8 @@ After refreshing multiple times, the response contains an error message \"You ca
 \subsection{Exploiting the vulnerability in login.php}
 
 We were able to login to Alice's account without knowing her password by inputing the following
-text into login input box: \texttt{alice' or \'1\'='1}. On the server side when this is applied
+text into login input box: \texttt{alice' or '1'='1}.\\
+\includegraphics{gfx/sql/login.png}\\ On the server side when this is applied
 to PHP code to form the SQL query, the query is changed into:
 
 \lstset{
@@ -177,15 +178,23 @@ to PHP code to form the SQL query, the query is changed into:
 SELECT user_id, username, user_password, user_active, user_level,
 user_login_tries, user_last_login_try
 FROM USERS_TABLE
-WHERE username = ’alice’ or ’1’ = ’ AND user_password = ’md5($password)’;
-\end{lstlisting}
+WHERE username = ’alice’ OR 1' = ’1’ AND user_password = ’md5($password)’;
+\end{lstlisting}\\
+This query successfully creates a new session for a user without the knowledge about the password.
+
+We tried injecting an update query too by inputing into the query
+\texttt{bob'; UPDATE phpbb\_users SET user\_password = 'foo' WHERE username ='bob' OR 1='1} 
+that was to change user `bob''s password to `foo'.  
+
+However, because MySQL prevents query stacking when using \texttt{mysql\_query} method, we saw the following error:
+
+\includegraphics[width=450px]{gfx/sql/updateerr.png}
 
 
-
+%Mention debug mode
 \section{Conclusions}
 
 Lorem ipsum
-
 \vfill
 \bibliographystyle{plain}
 \bibliography{ref}
