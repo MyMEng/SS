@@ -170,7 +170,7 @@ to PHP code to form the SQL query, the query is changed into:
 \lstset{
   captionpos=b,
   frame=single,
-  language=PHP,
+  language=SQL,
   breaklines=true,
   label=sql1
 }
@@ -193,9 +193,140 @@ However, because MySQL prevents query stacking when using \texttt{mysql\_query} 
 
 \subsection{Updating user profile}
 
-\texttt{Chaningbob' WHERE user\_id=4#}
+Put the following into the user signature:
+\texttt{Chaningbob`' WHERE user\_id=4\#}
+
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=PHP,
+	breaklines=true,
+	label=sql1
+}
+\begin{lstlisting}
+$sql = "UPDATE " . USERS_TABLE . "
+SET " . $username_sql . $passwd_sql . "user_email = '" . $email ."', user_icq = '" . str_replace("\'", "''", $icq) . "', user_website = '" . str_replace("\'", "''", $website) . "', user_occ = '" . str_replace("\'", "''", $occupation) . "', user_from = '" . str_replace("\'", "''", $location) . "', user_interests = '" . str_replace("\'", "''", $interests) . "', user_sig = '" . str_replace("\'", "''", $signature) . "', user_sig_bbcode_uid = '$signature_bbcode_uid', user_viewemail = $viewemail, user_aim = '" . str_replace("\'", "''", str_replace(' ', '+', $aim)) . "', user_yim = '" . str_replace("\'", "''", $yim) . "', user_msnm = '" . str_replace("\'", "''", $msn) . "', user_attachsig = $attachsig, user_allowsmile = $allowsmilies, user_allowhtml = $allowhtml, user_allowbbcode = $allowbbcode, user_allow_viewonline = $allowviewonline, user_notify = $notifyreply, user_notify_pm = $notifypm, user_popup_pm = $popup_pm, user_timezone = $user_timezone, user_dateformat = '" . str_replace("\'", "''", $user_dateformat) . "', user_lang = '" . $user_lang . "', user_style = $user_style, user_active = $user_active, user_actkey = '" . str_replace("\'", "''", $user_actkey) . "'" . $avatar_sql . " WHERE user_id = $user_id";
+\end{lstlisting}
 
 %Mention debug mode
+
+\subsection{Countermeasures}
+
+\subsubsection{Magic quotes}
+
+To test our first test counter measure, we turn back on the "magic quotes gpc" option PHP. Thanks to this option PHP escapes with backslashes special characters such as single quote for GPC operations what stands for Get/Post/Cookie operations\cite{phpman}.
+
+Now, our first attack fails, because we cannot inject single quote any more in order to change the SQL query. This results in not being able to log in.
+Also, we printed the resulting query to the Apache error log file and we could see that indeed the single quotes were escaped and didn't break the query the way we wanted.\
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=SQL,
+	breaklines=true,
+	label=sql1
+}
+\begin{lstlisting}
+ SELECT user_id, username, user_password, user_active, user_level, user_login_tries, user_last_login_try\n\t\t\tFROM phpbb_users\n\t\t\tWHERE username = 'alice\\' or \\'1\\'=\\'1'
+\end{lstlisting}\
+While with magic quotes turned off, the query can be modified:
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=SQL,
+	breaklines=true,
+	label=sql2
+}
+\begin{lstlisting}
+SELECT user_id, username, user_password, user_active, user_level, user_login_tries, user_last_login_try\n\t\t\tFROM phpbb_users\n\t\t\tWHERE username = 'alice' or '1'='1'
+\end{lstlisting}\
+However, escaping quotes with a backslash may not be a good countermeasure, which we will explain in the next part.
+
+\subsubsection{Using \texttt{addslashes()}}
+
+For this task we show an alternative method of escaping strings. GPC cookies are turned off by default in PHP 5.3 and were removed completely in PHP 5.4. Mainly because of the overhead of checking every string and that not every request contains a query or script string. Now it is required to `sanitize' strings by a developer in code explicitly. One way of doing it is to call
+\texttt{addslashes} in PHP which does exactly the same to the strings as magic cookies - escapes quotes, double quotes, backslashes and null characters.
+
+We can enable it in our phpBB forum code and we indeed see in the logs that our attacks fail:
+
+The query string for logging in looks exactly the same as in case of GPC cookies, what makes injecting SQL to have no effect:
+
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=SQL,
+	breaklines=true,
+	label=sqladdslash
+}
+\begin{lstlisting}
+SELECT user_id, username, user_password, user_active, user_level, user_login_tries, user_last_login_try\n\t\t\tFROM phpbb_users\n\t\t\tWHERE username = 'alice\\' or \\'1\\'=\\'1'
+\end{lstlisting}
+
+However, using  \texttt{addslashes()} or gpc cookies is not a good way of preventing the injection of malicious code. For example, it can be shown that if a special binary string is prepared and send using the query and \texttt{addslashes()} might not handle correctly Unicode strings. An example of such an attack was demonstrated here\cite{shiflett06}.
+
+\subsubsection{Using \texttt{mysql\_real\_escape\_string}}
+
+Another way of forming secure queries with user input is to escape variables that we get from outside world on the server-side by calling \texttt{mysql\_real\_escape\_string} method from MySQL API in PHP.
+
+This code below demonstrates how to prevent the attack on \texttt{SELECT} statement in login.php file:
+
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=PHP,
+	breaklines=true,
+	label=sqladdslash
+}
+\begin{lstlisting}
+$sql = "SELECT user_id, username, user_password, user_active, user_level, user_login_tries, user_last_login_try
+FROM " . USERS_TABLE . "
+WHERE username = '" . mysql_real_escape_string($username) . "'";
+\end{lstlisting}
+Again, we can see in the log file that query is escaped correctly:
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=SQL,
+	breaklines=true,
+	label=sqladdslash
+}
+\begin{lstlisting}
+[Mon Dec 15 13:17:05 2014] [error] [client 127.0.0.1] SELECT user_id, username, user_password, user_active, user_level, user_login_tries, user_last_login_try\n\t\t\tFROM phpbb_users\n\t\t\tWHERE username = 'alice\\' or \\'1\\'=\\'1', referer: http://www.sqllabmysqlphpbb.com/login.php
+\end{lstlisting}
+Moreover, the statement handles the case of vulnerable binary strings\cite{shiflett06}. This standard PHP MySQL API was however deprecated in PHP 5 and it is now required to use either MySQLi or PDO APIs. The default MySQL driver was not deprecated for security reasons, but simply because new PHP5 did not want to be shipped with a library not used by everyone.\cite{phpfaq}
+
+\subsubsection{Using prepared statement}
+Another way of making strings sanitized is to use so called prepared statements. The syntax of prepared statements looks more like the one of \texttt{printf} method known to C developers. Using this style of forming dynamic SQL queries makes it easier not to forget about escaping parameters because they are automatically escaped.
+
+New PHP MySQL API, called MySQL Improved or simply MySQLi\cite{mysqli} offers API for prepared statement. The code below shows a proof-of-concept of how to change login.php function to use prepared statements. We didn't however change entire PhpBB to use MySQLi, so our change didn't work:
+
+Again we show how to prevent the SQL injection in login.php:
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=PHP,
+	breaklines=true,
+	label=sqladdslash
+}
+\begin{lstlisting}	
+
+// Assuming $db is object of MySQLi connection
+$stmt = mysqli_stmt_init  ( $db);
+$row = null;
+
+// Prevent injection
+if($prepared =  $stmt->prepare("SELECT user_id, username, user_password, user_active, user_level, user_login_tries, user_last_login_try FROM " . USERS_TABLE . "WHERE username = ?"))
+{
+	$stmt->bind_param("s", $username);
+	$stmt->execute();
+	$row = $stmt->fetch();
+	$stmt->close();
+} else {
+	message_die(GENERAL_ERROR, 'Error in obtaining userdata', '', __LINE__, __FILE__, "");
+}
+\end{lstlisting}
+
+Because \texttt{\$db} was not of type MySQLi, our code caused the following error:\\\\
+\includegraphics{gfx/sql/mysqli.png}
 \section{Conclusions}
 
 Lorem ipsum
