@@ -142,35 +142,39 @@ Such a set-up can for example lead to capturing sensitive data that is unencrypt
 
 \subsection{SYN Flooding Attack}
 
-In this attack our task was to cause a Denial of Service using SYN flood attack. The SYN or synchronize request is send in a typical TCP protocol exchange in order to establish a connection. A client sends a SYN packet, receiving SYN\_ACK acknowledgment from the server and confirms that the synchronization ACK packet was received by responding to the server with a ACK packet.
+In this attack our task was to cause a Denial of Service using SYN flood attack. The SYN or synchronize request is send in a typical TCP protocol exchange in order to establish a connection. A client sends a SYN packet, receiving SYN\_ACK acknowledgement from the server and confirms that the synchronization ACK packet was received by responding to the server with a ACK packet.\\
 
-In the attack, an attacker sends multiple SYN packets without responding to SYN\_RECV. This is done by randomizing the IP address in the original SYN request, so that the response goes to nobody as a consequence. This causes the server to keep many \'half-open\'' connections.
+In the attack, an attacker sends multiple SYN packets without responding to SYN\_RECV. This is done by randomizing the IP address in the original SYN request, so that the response goes to nobody as a consequence. This causes the server to keep many ``half-open'' connections.\\
 
-We perform the SYN flood attack using netwox using the script we created (see \ref{script1}). We can then see on the victim machine that there are many connections opened at state "SYN-ACK" from many random IP addresses:\\
+We perform the SYN flood attack using netwox using the script we created (see \ref{script1}). We can then see on the victim machine that there are many connections opened at state ``SYN-AC'' from many random IP addresses:\\
 \includegraphics[width=.95\textwidth]{gfx/syn-netstat.png}
 
-We send those requests to telnet port - 23. However, we are still able to connect from an observer machine using telnet. This is because by default a mechanism for preventing SYN flood attacks is turned on. If we switch it off using the command \texttt{sudo sysctl -w net.ipv4.tcp\_syncookies=0} then we indeed see that our denial of service attacks works and we cannot connect to the victim machine using telnet:\\
+We send those requests to telnet port 23. However, we are still able to connect from an observer machine using telnet. This is because by default a mechanism for preventing SYN flood attacks is turned on. If we switch it off using the command \texttt{sudo sysctl -w net.ipv4.tcp\_syncookies=0} then we indeed see that our denial of service attacks works and we cannot connect to the victim machine using telnet:\\
+
 \includegraphics[width=.95\textwidth]{gfx/syn-telnet.png}.
 
-Syn cookies allow the server to send back SYN\_ACK packet and remove original SYN request from the queue. This way connections are not filling the buffer. Then, using the request number of arriving ACK packet, the original SYN can be "reconstructed". Thanks to this mechanism Denial of service attack was not possible in the first attempt.
+Syn cookies allow the server to send back SYN\_ACK packet and remove original SYN request from the queue. This way connections are not filling the buffer. Then, using the request number of arriving ACK packet, the original SYN can be ``reconstructed''. Thanks to this mechanism Denial of service attack was not possible in the first attempt.\\
 
-It is hard to observer in Wireshark the amount of packets coming to the victim, because they quickly fill the buffer in Wireshark and cause it to crash.
+It is hard to observer in \texttt{Wireshark} the amount of packets coming to the victim, because they quickly fill the buffer in \texttt{Wireshark} and cause it to crash.
 
 \subsection{TCP RST Attacks on telnet and ssh Connections}
 
-In the next task we were supposed to spoof a RST packet in order to break an established telnet or ssh connection between two machines in the same LAN network.
+In the next task we were supposed to spoof a RST packet in order to break an established telnet or ssh connection between two machines in the same LAN network.\\
 
-On the attacker machine we used \texttt{netwox} to prepare the malicious packet. We first establish a connection between a victim and observer and we could see the connection between them break if we send a packet to the observer pretending to be the victim.
+On the attacker machine we used \texttt{netwox} to prepare the malicious packet. We first establish a connection between a victim and observer and we could see the connection between them break if we send a packet to the observer pretending to be the victim.\\
 
-We use our script\ref{script1} to create the RST packet on behalf of the victim at the IP address 10.0.2.4.\\
+We use our script\ref{script1} to create the RST packet on behalf of the victim at the IP address \texttt{10.0.2.4}.\\
+
 \includegraphics[width=.95\textwidth]{gfx/rst-attack.png}
 
 And we can see that when we try to type anything on the observer machine with an established telnet connection, the connection breaks:\\
+
 \includegraphics[width=.95\textwidth]{gfx/rst-reset.png}.
 
-The exact same happens for a SSH connection.
+The exact same happens for a SSH connection.\\
 
-Using Wireshark tool we can see what the spoofed packet looks like:\\
+Using \texttt{Wireshark} tool we can see what the spoofed packet looks like:\\
+
 \includegraphics[width=.95\textwidth]{gfx/rst-spoofed.png}
 
 For the attack to work, we had to repeat ARP attack from first part of the task.
@@ -178,6 +182,7 @@ For the attack to work, we had to repeat ARP attack from first part of the task.
 \subsection{Hijacking TCP session}
 
 \includegraphics[width=.95\textwidth]{gfx/request.png}\\
+
 \includegraphics[width=.95\textwidth]{gfx/response.png}
 
 \begin{verbatim}
@@ -217,12 +222,14 @@ After refreshing multiple times, the response contains an error message "You can
 
 \section{SQL injection attack}
 
-\subsection{Exploiting the vulnerability in login.php}
+\subsection{Exploiting the vulnerability in login.php\label{sec:sql:login}}
 
-We were able to login to Alice's account without knowing her password by inputing the following
+We were able to login to Alice's account without knowing her password by inputting the following
 text into login input box: \texttt{alice' or '1'='1}.\\
-\includegraphics[width=.95\textwidth]{gfx/sql/login.png}\\ On the server side when this is applied
-to PHP code to form the SQL query, the query is changed into:
+
+\includegraphics[width=.95\textwidth]{gfx/sql/login.png}\\
+
+On the server side when this is applied to PHP code to form the SQL query, the query is changed into:
 
 \lstset{
   captionpos=b,
@@ -238,20 +245,18 @@ FROM USERS_TABLE
 WHERE username = ’alice’ OR 1' = ’1’ AND user_password = ’md5($password)’;
 \end{lstlisting}
 
-This query successfully creates a new session for a user without the knowledge about the password.
+This query successfully creates a new session for a user without the knowledge about the password.\\
 
-We tried injecting an update query too by inputing into the query
+We also tried injecting an update query by inputting into the query
 \texttt{bob'; UPDATE phpbb\_users SET user\_password = 'foo' WHERE username ='bob' OR 1='1} 
-that was to change user `bob''s password to `foo'.  
-
-However, because MySQL prevents query stacking when using \texttt{mysql\_query} method, we saw the following error:
+that was to change Bob's password to ``foo''.\\
+The attack failed because MySQL prevents query stacking when using \texttt{mysql\_query} method, we saw the following error:
 
 \includegraphics[width=.95\textwidth]{gfx/sql/updateerr.png}
 
 \subsection{Updating user profile}
 
-Our aim is to change Bob's password using known account of Alice. Bob's user ID is 4 which easy to check as it shows for example in the URL for sending private messages on the forum. We put the following code into the user signature of user Alice:
-\texttt{Chaningbob' WHERE user\_id=4 \#}
+Our aim was to change Bob's password using known account of Alice. Bob's user ID is 4 which easy to check as it is shown for example in the URL for sending private messages on the forum. We put the following code into the \emph{signature} field of user Alice: \texttt{Changingbob' WHERE user\_id=4 \#}.\\
 
 We also provide old Alice's password and new password, that will be assigned to Bob. This way we break the following query:
 \lstset{
@@ -267,12 +272,12 @@ SET " . $username_sql . $passwd_sql . "user_email = '" . $email ."', user_icq = 
 \end{lstlisting}
 Now we can see that Alice's signature changes, but not her password:\\
 \includegraphics[width=.95\textwidth]{gfx/sql/changed_bob.png}\\
-As well as we can log in to Bob account using the password we provided in the previous form:\\
+We also can log in to Bob account using the password we provided in the previous form:\\
 \includegraphics[width=.95\textwidth]{gfx/sql/chainging_alice.png}\\
 
-We can also show that we can modify a password without knowing any user's password. We can get access to a user account using first attack. Then we can inject SQL statement in the signature with a new password that is an md5 hash of our choice:\\
+We can also show that we can modify a password without knowing any user's password. We can get access to a user account using first attack (see \emph{section}~\ref{sec:sql:login}). Then we can inject SQL statement in the signature with a new password that is an md5 hash of our choice:\\
 For Ted's password: \texttt{', user\_password = \"1a1dc91c907325c69271ddf0c944bc72a WHERE userid = 6 \# '}\\
-And that way we can take control on every account and by-pass mechanism in PhpBB that prevents changing the password without providing the old one first.
+And that way we can take control on every account and by-pass mechanism in PhpBB that prevents changing the password without providing the old one first.\\
 
 Another interesting finding is that if we create malformed SQL statement, we can debug it since a debug mode is turned on on the server. This allows us to see details of the SQL query without having access to the code. In real production servers debug messages should never be printed for that reason.\\
 \includegraphics[width=.95\textwidth]{gfx/sql/debug.png}
@@ -280,11 +285,10 @@ Another interesting finding is that if we create malformed SQL statement, we can
 \subsection{Countermeasures}
 
 \subsubsection{Magic quotes}
+To test our first counter measure, we turn back on the ``magic quotes gpc'' PHP option. Thanks to this option PHP escapes with backslashes special characters such as single quote for GPC (Get/Post/Cookie operations~\cite{phpman}) operations.
 
-To test our first test counter measure, we turn back on the "magic quotes gpc" option PHP. Thanks to this option PHP escapes with backslashes special characters such as single quote for GPC operations what stands for Get/Post/Cookie operations\cite{phpman}.
-
-Now, our first attack fails, because we cannot inject single quote any more in order to change the SQL query. This results in not being able to log in.
-Also, we printed the resulting query to the Apache error log file and we could see that indeed the single quotes were escaped and didn't break the query the way we wanted.\
+Now, our first attack fails, because we cannot inject single quote any more in order to change the SQL query. This results in us not being able to log in.\\
+Also, we printed the resulting query to the Apache error log file and we could see that indeed the single quotes were escaped and didn't break the query the way we intended.\\
 \lstset{
 	captionpos=b,
 	frame=single,
@@ -294,7 +298,7 @@ Also, we printed the resulting query to the Apache error log file and we could s
 }
 \begin{lstlisting}
  SELECT user_id, username, user_password, user_active, user_level, user_login_tries, user_last_login_try\n\t\t\tFROM phpbb_users\n\t\t\tWHERE username = 'alice\\' or \\'1\\'=\\'1'
-\end{lstlisting}\
+\end{lstlisting}
 While with magic quotes turned off, the query can be modified:
 \lstset{
 	captionpos=b,
@@ -305,17 +309,15 @@ While with magic quotes turned off, the query can be modified:
 }
 \begin{lstlisting}
 SELECT user_id, username, user_password, user_active, user_level, user_login_tries, user_last_login_try\n\t\t\tFROM phpbb_users\n\t\t\tWHERE username = 'alice' or '1'='1'
-\end{lstlisting}\
+\end{lstlisting}
 However, escaping quotes with a backslash may not be a good countermeasure, which we will explain in the next part.
 
 \subsubsection{Using \texttt{addslashes()}}
 
-For this task we show an alternative method of escaping strings. GPC cookies are turned off by default in PHP 5.3 and were removed completely in PHP 5.4. Mainly because of the overhead of checking every string and that not every request contains a query or script string. Now it is required to `sanitize' strings by a developer in code explicitly. One way of doing it is to call
-\texttt{addslashes} in PHP which does exactly the same to the strings as magic cookies - escapes quotes, double quotes, backslashes and null characters.
+For this task we show an alternative method of escaping strings. GPC cookies are turned off by default in PHP 5.3 and were removed completely in PHP 5.4. Mainly because of the overhead of checking every string and that not every request contains a query or script string. Now it is required to ``sanitize'' strings by a developer in code explicitly. One way of doing it is to call \texttt{addslashes} in PHP which does exactly the same to the strings as magic cookies---escapes quotes, double quotes, backslashes and null characters.\\
 
-We can enable it in our phpBB forum code and we indeed see in the logs that our attacks fail:
-
-The query string for logging in looks exactly the same as in case of GPC cookies, what makes injecting SQL to have no effect:
+We can enable it in our phpBB forum code and we indeed see in the logs that our attacks fail.\\
+The query string for logging-in looks exactly the same as in case of GPC cookies, what makes injecting SQL not effective:
 
 \lstset{
 	captionpos=b,
@@ -328,11 +330,10 @@ The query string for logging in looks exactly the same as in case of GPC cookies
 SELECT user_id, username, user_password, user_active, user_level, user_login_tries, user_last_login_try\n\t\t\tFROM phpbb_users\n\t\t\tWHERE username = 'alice\\' or \\'1\\'=\\'1'
 \end{lstlisting}
 
-However, using  \texttt{addslashes()} or gpc cookies is not a good way of preventing the injection of malicious code. For example, it can be shown that if a special binary string is prepared and send using the query and \texttt{addslashes()} might not handle correctly Unicode strings. An example of such an attack was demonstrated here\cite{shiflett06}.
+However, using  \texttt{addslashes()} or GPC cookies is not a good way of preventing the injection of malicious code. For example, it can be shown that if a special binary string is prepared and send using the query \texttt{addslashes()} might not handle correctly Unicode strings. An example of such an attack was demonstrated by~\cite{shiflett06}.
 
 \subsubsection{Using \texttt{mysql\_real\_escape\_string}}
-
-Another way of forming secure queries with user input is to escape variables that we get from outside world on the server-side by calling \texttt{mysql\_real\_escape\_string} method from MySQL API in PHP.
+Another way of forming secure queries with user inputs is to escape variables that we get from outside world on the server-side by calling \texttt{mysql\_real\_escape\_string} method from MySQL API in PHP.\\
 
 This code below demonstrates how to prevent the attack on \texttt{SELECT} statement in login.php file:
 
@@ -359,12 +360,12 @@ Again, we can see in the log file that query is escaped correctly:
 \begin{lstlisting}
 [Mon Dec 15 13:17:05 2014] [error] [client 127.0.0.1] SELECT user_id, username, user_password, user_active, user_level, user_login_tries, user_last_login_try\n\t\t\tFROM phpbb_users\n\t\t\tWHERE username = 'alice\\' or \\'1\\'=\\'1', referer: http://www.sqllabmysqlphpbb.com/login.php
 \end{lstlisting}
-Moreover, the statement handles the case of vulnerable binary strings\cite{shiflett06}. This standard PHP MySQL API was however deprecated in PHP 5 and it is now required to use either MySQLi or PDO APIs. The default MySQL driver was not deprecated for security reasons, but simply because new PHP5 did not want to be shipped with a library not used by everyone.\cite{phpfaq}
+Moreover, the statement handles the case of vulnerable binary strings~\cite{shiflett06}. This standard PHP MySQL API was however deprecated in PHP 5 and it is now required to use either MySQLi or PDO APIs. The default MySQL driver was not deprecated for security reasons, but simply because new PHP5 did not want to be shipped with a library not used by everyone~\cite{phpfaq}.
 
 \subsubsection{Using prepared statement}
-Another way of making strings sanitized is to use so called prepared statements. The syntax of prepared statements looks more like the one of \texttt{printf} method known to C developers. Using this style of forming dynamic SQL queries makes it easier not to forget about escaping parameters because they are automatically escaped.
+Another way of making strings sanitized is to use so called prepared statements. The syntax of prepared statements looks more like the one of \texttt{printf} method known to \texttt{C} developers. Using this style of forming dynamic SQL queries makes it easier not to forget about escaping parameters because they are automatically escaped.\\
 
-New PHP MySQL API, called MySQL Improved or simply MySQLi\cite{mysqli} offers API for prepared statement. The code below shows a proof-of-concept of how to change login.php function to use prepared statements. We didn't however change entire PhpBB to use MySQLi, so our change didn't work:
+New PHP MySQL API, called MySQL Improved or simply MySQLi (\cite{mysqli}) offers API for prepared statement. The code below shows a proof-of-concept of how to change login.php function to use prepared statements. We didn't however change entire PhpBB to use MySQLi, so our change didn't work.\\
 
 Again we show how to prevent the SQL injection in login.php:
 \lstset{
@@ -392,11 +393,12 @@ if($prepared =  $stmt->prepare("SELECT user_id, username, user_password, user_ac
 }
 \end{lstlisting}
 
-Because \texttt{\$db} was not of type MySQLi, our code caused the following error:\\\\
+Because \texttt{\$db} was not of type MySQLi, our code caused the following error:\\
 \includegraphics[width=.95\textwidth]{gfx/sql/mysqli.png}
-\section{Conclusions}
 
+\section{Conclusions}
 Lorem ipsum
+
 \vfill
 \bibliographystyle{plain}
 \bibliography{ref}
