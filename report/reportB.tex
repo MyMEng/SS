@@ -102,7 +102,6 @@ We wanted to make the victim think that another gateway has the MAC of the attac
 
 \includegraphics[width=.95\textwidth]{gfx/arp1}\\
 
-
 Using \texttt{netwox} we could spoof a packet that updates ARP cache on the victim's machine and replace the entry with the MAC of the attacker at IP address \texttt{10.0.2.6}:\\
 
 \includegraphics[width=.95\textwidth]{gfx/arp-attack}\\
@@ -162,7 +161,7 @@ In the next task we were supposed to spoof a RST packet in order to break an est
 
 On the attacker machine we used \texttt{netwox} to prepare the malicious packet. We first establish a connection between a victim and observer and we could see the connection between them break if we send a packet to the observer pretending to be the victim.
 
-We use our script\ref{script1} to create the RST packet on behalf of the victim at the IP address 10.0.2.4.\\
+We use our script in \ref{script1} to create the RST packet on behalf of the victim at the IP address 10.0.2.4.\\
 \includegraphics[width=.95\textwidth]{gfx/rst-attack.png}
 
 And we can see that when we try to type anything on the observer machine with an established telnet connection, the connection breaks:\\
@@ -175,11 +174,99 @@ Using Wireshark tool we can see what the spoofed packet looks like:\\
 
 For the attack to work, we had to repeat ARP attack from first part of the task.
 
+\subsection{TCP RST Attacks on Video Streaming Applications}
+
+In this task we wanted to show how to reset the connection on a given machine that opens a socket with a Internet video streaming website.
+
+However, the Firefox version on Ubuntu 9.10 is too old to allow watching online videos in 2014. Since upgrading would be troublesome, we decided to show that we can reset a connection between a TCP connection using simple python script simulating a server and client streaming data over TCP.
+
+On an observer machine, we created a small server in Python that would be run on observer machine, which always echoes incoming packets:\\
+
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=Python,
+	breaklines=true,
+	label=youtube1
+}
+\begin{lstlisting}
+#!/usr/bin/env python
+
+import socket
+import time
+
+TCP_IP = '10.0.2.5'
+TCP_PORT = 5005
+BUFFER_SIZE = 20  # Normally 1024, but we want fast response
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind((TCP_IP, TCP_PORT))
+s.listen(1)
+
+conn, addr = s.accept()
+print 'Connection address:', addr
+while 1:
+data = conn.recv(BUFFER_SIZE)
+if not data: continue
+print "received data:", data
+#time.sleep(1)
+conn.send("Received: " + data)  # echo
+conn.close()
+\end{lstlisting}
+
+And on victim's machine, we created a script simulating client connecting to that server and sending and receiving data continuously. This would simulate streaming data from a YouTube server.\\
+\lstset{
+	captionpos=b,
+	frame=single,
+	language=Python,
+	breaklines=true,
+	label=youtube2
+}
+\begin{lstlisting}
+import socket
+import datetime
+
+TCP_IP = '10.0.2.5'
+TCP_PORT = 5005
+BUFFER_SIZE = 1024
+MESSAGE = "Hello, World!"
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((TCP_IP, TCP_PORT))
+s.send(MESSAGE)
+while(1):
+data = s.recv(BUFFER_SIZE)
+if not data: continue
+print datetime.datetime.now(), data
+s.send(MESSAGE)
+s.close()
+
+print "received data:", data
+\end{lstlisting}
+
+
+\subsection{ICMP Blind Connection-Reset and Source-Quench Attacks}
+
+Another attack we attempted was to spoof ICMP packets for routers that would cause the reseting of connection or sending a ``source quench'' packet that would tell the router to slow down all the connections.
+
+We used \texttt{netwox} tool to create these packets on the attacker machine.
+Using wireshark we can see that these spoofed packets were indeed being sent:\\
+
+\includegraphics[width=.95\textwidth]{gfx/unrechable.png}
+
+However, we could not see any disruption to the connection that was established between victim and observer beforehand.
+
+
 \subsection{Hijacking TCP session}
 
-\includegraphics[width=.95\textwidth]{gfx/request.png}\\
-\includegraphics[width=.95\textwidth]{gfx/response.png}
+Last task in this section was to show how we can hijack an existing TCP session
+between a victim and an observer from an attacker machine. We observed existing telnet
+connection handshake using Wireshark on attacker machine (hence we had to perform ARP and ICMP redirection attacks).
+Our goal was to send ``pwd'' command to display path on observer machine, pretending to be victim. When we listened to the
+messages, we knew what were consecutive `seq' and and `ack' numbers. We had to use these values to prepare our packets. We had to insert
+the increased `ack' number to be our new `seq' number and the previous, increased sequence number to be our next `ack' that we want to receive from the observer.
 
+We prepared the packet using \texttt{netwag} and tool 40:\\
 \begin{verbatim}
 Command 40 --ip4-dontfrag --ip4-offsetfrag 0 --ip4-ttl 64 --... :
 IP______________________________________________________________.
@@ -207,6 +294,16 @@ TCP_____________________________________________________________.
 70 77 64 0d  00                                     # pwd..
 __END_OF_PROGRAM__
 \end{verbatim}
+Last 4 bytes in that packet, ``70 77 64 0d'' are ASCII encoded string ``pwd\textbackslash r\textbackslash n''
+
+
+We could observe teh packet being send in the Wireshark tool:\\ \includegraphics[width=.95\textwidth]{gfx/request.png}\\
+
+After sending this packet, we had to also create ACK packet before the observer would provide us with the final response. Once response was send, the observer machine, convinced it's talking to the victim, would provide us with the response to the \texttt{pwd} command, which was the path to the observer home folder:\\
+
+\includegraphics[width=.95\textwidth]{gfx/response.png}
+
+This attack is especially dangerous, as we could perform any command on hijacked session. This shows the importance of using an encrypted protocol for communication.
 
 \section{Cross-side scripting (XSS) attacks}
 
