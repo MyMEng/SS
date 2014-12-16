@@ -17,8 +17,7 @@
 \usepackage[page, toc]{appendix}
 \usepackage[usenames,dvipsnames]{color}
 \usepackage{graphicx}
-
-% \newcommand{\ts}{\textsuperscript}
+\newcommand{\ts}{\textsuperscript}
 % \usepackage{url}
 
 \begin{document}
@@ -97,58 +96,54 @@ In each subtask we explain the cause of a vulnerability and show how to perform 
 
 \subsection{ARP cache poisoning}\label{arp}
 
-Our victim MAC address was "08:00:27:A6:EB:87" while its IP address was 10.0.2.4. The gate-away is set at the address 10.0.2.1 
+Our victim MAC address was \texttt{08:00:27:A6:EB:87} while its IP address was \texttt{10.0.2.4}. The gate-away is set at the address \texttt{10.0.2.1}.\\
 
-We wanted to make the victim think that another gateway has the MAC of the attacker. The original MAC of the gateway was "52:54:00:12:35:00", while attacker MAC address was "08:00:27:ee:0d:0f". We could see that by running arp -a command.\\
+We wanted to make the victim think that another gateway has the MAC of the attacker. The original MAC of the gateway was \texttt{52:54:00:12:35:00}, while attacker's MAC address was \texttt{08:00:27:EE:0D:0F}. We could see that by running \texttt{arp -a} command.\\
 
 \includegraphics[width=.95\textwidth]{gfx/arp1}\\
 
 
-Using netwox we could spoof a packet that updates ARP cache on the victim's machine and replace the entry with the MAC of the attacker at IP address 10.0.2.6:\\
+Using \texttt{netwox} we could spoof a packet that updates ARP cache on the victim's machine and replace the entry with the MAC of the attacker at IP address \texttt{10.0.2.6}:\\
 
 \includegraphics[width=.95\textwidth]{gfx/arp-attack}\\
 
-Here we used netwox tool using the script we created that is shown in the appendix ~\ref{script1} for spoofing ARP packages, we tell the tool the original MAC and new MAC addresses, as well as IP addresses of the victim and the IP address of which entry in the ARP cache we want to modify.
+Here we used \texttt{netwox} tool using the script we created that is shown in the \emph{appendix}~\ref{script1} for spoofing ARP packages, we tell the tool the original MAC and new MAC addresses, as well as IP addresses of the victim and the IP address of which entry in the ARP cache we want to modify.\\
 
-After spoofing the packet, running arp -a tool on the victim's machine results in the following output:\\
+After spoofing the packet, running \texttt{arp -a} tool on the victim's machine results in the following output:\\
 
 \includegraphics[width=.95\textwidth]{gfx/arp-after-attack}
 
-As we can see, the attacker managed to "convince" the victim that his hardware address corresponds to a 3rd party IP address. Now we can observe packets send from the victim to the observer being received by the attacker in the Wireshark output:\\
+As we can see, the attacker managed to ``convince'' the victim that his hardware address corresponds to a 3\ts{rd} party IP address. Now we can observe packets send from the victim to the observer being received by the attacker in the \texttt{Wireshark} output:\\
 
 \includegraphics[width=.95\textwidth]{gfx/arp-shark}
 
 
 \subsection{ICMP Redirect Attack}
 
-ICMP messages are used to send error or redirection information in the IP protocol. The redirect message tells the network to use alternative routing. An attacker can spoof a ICMP redirect request in order to perform for example eavesdropping by driving the network traffic through the attacker's machine.
+ICMP messages are used to send error or redirection information in the IP protocol. The redirect message tells the network to use alternative routing. An attacker can spoof an \emph{ICMP redirect request} in order to perform for example eavesdropping by driving the network traffic through the attacker's machine.\\
 
-In this attack we want to listen to packet exchange between a victim and a third party (observer). We want to be able to send ICMP redirect packet spoofed in such a way that we convince everyone in the network that the attacker is the new gateway.
+In this attack we want to listen to packet exchange between a victim and a third party (observer). We want to be able to send ICMP redirect packet spoofed in such a way that we convince everyone in the network that the attacker is the new gateway.\\
 
-In order for the attack to succeed, we need to repeat the ARP attack (see section ~\ref{arp}).
+In order for the attack to succeed, we need to repeat the ARP attack (see \emph{section}~\ref{arp}).
 
-Again using our script shown in the appendix~\ref{script1} we use \textbf{netwox} to spoof the ICMP message.\\
+Again using our script shown in the appendix~\ref{script1} we use \texttt{netwox} to spoof the ICMP message.\\
 
 \includegraphics[width=.95\textwidth]{gfx/imcp-ping}\\
 
-Now the entire network should believe that the attacker is the new gate-away. If we try to ping the victim (at the address 10.0.2.4) on the observer machine (at the address 10.0.2.5), we see that the communication works:\\
+Now the entire network believes that the attacker is the new gate-away. If we try to ping the victim (at the address \texttt{10.0.2.4}) on the observer's machine (at the address \texttt{10.0.2.5}), we see that the communication works:\\
 
 \includegraphics[width=.95\textwidth]{gfx/imcp-netwox}\\
 
-However, the attack can now watch the communication and data being sent using \textbf{Wireshark}.\\
+However, the attacker can now watch the communication and data being sent using \texttt{Wireshark}.\\
 
 \includegraphics[width=.95\textwidth]{gfx/imcp-shark}\\
 
-Such a setup can for example lead to captuing sensitive data that is unencrypted or lead to recognizing known ciphertext-plaintext pairs that can be used for various attacks on encryption algorithms.
-
-
-
+Such a set-up can for example lead to capturing sensitive data that is unencrypted or may lead to recognizing known cipher-text--plain-text pairs that can be used for various attacks on encryption algorithms.
 
 \subsection{SYN Flooding Attack}
+In this attack our task was to cause a Denial of Service using SYN flood attack. The SYN or \emph{synchronize request} is send in a typical TCP protocol exchange in order to establish a connection. A client sends a SYN packet, receiving SYN-ACK acknowledgement from the server and confirms that the synchronization acknowledgement was received by responding to the server with a ACK packet.\\
 
-In this attack our task was to cause a Denial of Service using SYN flood attack. The SYN or synchronize request is send in a typical TCP protocol exchange in order to establish a connection. A client sends a SYN packet, receiving SYN-ACK acknowledgment from the server and confirms that the synchronization acknowledgment was recived by responding to the server with a ACK packet.
-
-In the attack, an attacker sends multiple SYN packets without responding to SYN-ACK. This is done by randomizing the IP address in the original SYN request, so that the response goes to nobody as a consequence. This causes the server to keep many \'half-open\'' connections.
+In the attack, an attacker sends multiple SYN packets without responding to SYN-ACK. This is done by randomizing the IP address in the original SYN request, so that the response goes to nobody as a consequence. This causes the server to keep many ``half-open'' connections.\\
 
 \subsection{Hijacking TCP session}
 
@@ -183,7 +178,7 @@ TCP_____________________________________________________________.
 __END_OF_PROGRAM__
 \end{verbatim}
 
-\section{XSS attacks}
+\section{Cross-side scripting (XSS) attacks}
 
 \subsection{Writing an XSS Worm}
 
