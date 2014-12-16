@@ -61,7 +61,7 @@
 \setcounter{page}{1}
 
 \section{Introduction}
-In this paper we present exploiting vulnerabilities in: \texttt{C} string formatting, \texttt{chroot} command/system call, and \texttt{C} buffer overflow.\\
+In this paper we present how to exploit vulnerabilities in: General \texttt{TCP/IP} attacks , \texttt{XSS}---Cross-site scripting, and \texttt{C} buffer overflow.\\
 In each subtask we explain the cause of a vulnerability, show how to perform a potential attack and we reflect on created risk. Methods used to exploit these weaknesses are described in depth; algorithms, code, input, and output are included for clarity.\\
 \textbf{Table~\ref{tab:SoC}} shows contribution to this study per author.
 
@@ -101,22 +101,22 @@ Our victim MAC address was "08:00:27:A6:EB:87" while its IP address was 10.0.2.4
 
 We wanted to make the victim think that another gateway has the MAC of the attacker. The original MAC of the gateway was "52:54:00:12:35:00", while attacker MAC address was "08:00:27:ee:0d:0f". We could see that by running arp -a command.\\
 
-\includegraphics{gfx/arp1}\\
+\includegraphics[width=.95\textwidth]{gfx/arp1}\\
 
 
 Using netwox we could spoof a packet that updates ARP cache on the victim's machine and replace the entry with the MAC of the attacker at IP address 10.0.2.6:\\
 
-\includegraphics{gfx/arp-attack}\\
+\includegraphics[width=.95\textwidth]{gfx/arp-attack}\\
 
 Here we used netwox tool using the script we created that is shown in the appendix ~\ref{script1} for spoofing ARP packages, we tell the tool the original MAC and new MAC addresses, as well as IP addresses of the victim and the IP address of which entry in the ARP cache we want to modify.
 
 After spoofing the packet, running arp -a tool on the victim's machine results in the following output:\\
 
-\includegraphics{gfx/arp-after-attack}
+\includegraphics[width=.95\textwidth]{gfx/arp-after-attack}
 
 As we can see, the attacker managed to "convince" the victim that his hardware address corresponds to a 3rd party IP address. Now we can observe packets send from the victim to the observer being received by the attacker in the Wireshark output:\\
 
-\includegraphics[width=450px]{gfx/arp-shark}
+\includegraphics[width=.95\textwidth]{gfx/arp-shark}
 
 
 \subsection{ICMP Redirect Attack}
@@ -129,15 +129,15 @@ In order for the attack to succeed, we need to repeat the ARP attack (see sectio
 
 Again using our script shown in the appendix~\ref{script1} we use \textbf{netwox} to spoof the ICMP message.\\
 
-\includegraphics{gfx/imcp-ping}\\
+\includegraphics[width=.95\textwidth]{gfx/imcp-ping}\\
 
 Now the entire network should believe that the attacker is the new gate-away. If we try to ping the victim (at the address 10.0.2.4) on the observer machine (at the address 10.0.2.5), we see that the communication works:\\
 
-\includegraphics{gfx/imcp-netwox}\\
+\includegraphics[width=.95\textwidth]{gfx/imcp-netwox}\\
 
 However, the attack can now watch the communication and data being sent using \textbf{Wireshark}.\\
 
-\includegraphics[width=450px]{gfx/imcp-shark}\\
+\includegraphics[width=.95\textwidth]{gfx/imcp-shark}\\
 
 Such a setup can for example lead to captuing sensitive data that is unencrypted or lead to recognizing known ciphertext-plaintext pairs that can be used for various attacks on encryption algorithms.
 
@@ -152,8 +152,8 @@ In the attack, an attacker sends multiple SYN packets without responding to SYN-
 
 \subsection{Hijacking TCP session}
 
-\includegraphics[width=450px]{gfx/request.png}\\
-\includegraphics[width=450px]{gfx/response.png}
+\includegraphics[width=.95\textwidth]{gfx/request.png}\\
+\includegraphics[width=.95\textwidth]{gfx/response.png}
 
 \begin{verbatim}
 Command 40 --ip4-dontfrag --ip4-offsetfrag 0 --ip4-ttl 64 --... :
@@ -196,7 +196,7 @@ After refreshing multiple times, the response contains an error message "You can
 
 We were able to login to Alice's account without knowing her password by inputing the following
 text into login input box: \texttt{alice' or '1'='1}.\\
-\includegraphics{gfx/sql/login.png}\\ On the server side when this is applied
+\includegraphics[width=.95\textwidth]{gfx/sql/login.png}\\ On the server side when this is applied
 to PHP code to form the SQL query, the query is changed into:
 
 \lstset{
@@ -221,7 +221,7 @@ that was to change user `bob''s password to `foo'.
 
 However, because MySQL prevents query stacking when using \texttt{mysql\_query} method, we saw the following error:
 
-\includegraphics[width=450px]{gfx/sql/updateerr.png}
+\includegraphics[width=.95\textwidth]{gfx/sql/updateerr.png}
 
 \subsection{Updating user profile}
 
@@ -241,16 +241,16 @@ $sql = "UPDATE " . USERS_TABLE . "
 SET " . $username_sql . $passwd_sql . "user_email = '" . $email ."', user_icq = '" . str_replace("\'", "''", $icq) . "', user_website = '" . str_replace("\'", "''", $website) . "', user_occ = '" . str_replace("\'", "''", $occupation) . "', user_from = '" . str_replace("\'", "''", $location) . "', user_interests = '" . str_replace("\'", "''", $interests) . "', user_sig = '" . str_replace("\'", "''", $signature) . "', user_sig_bbcode_uid = '$signature_bbcode_uid', user_viewemail = $viewemail, user_aim = '" . str_replace("\'", "''", str_replace(' ', '+', $aim)) . "', user_yim = '" . str_replace("\'", "''", $yim) . "', user_msnm = '" . str_replace("\'", "''", $msn) . "', user_attachsig = $attachsig, user_allowsmile = $allowsmilies, user_allowhtml = $allowhtml, user_allowbbcode = $allowbbcode, user_allow_viewonline = $allowviewonline, user_notify = $notifyreply, user_notify_pm = $notifypm, user_popup_pm = $popup_pm, user_timezone = $user_timezone, user_dateformat = '" . str_replace("\'", "''", $user_dateformat) . "', user_lang = '" . $user_lang . "', user_style = $user_style, user_active = $user_active, user_actkey = '" . str_replace("\'", "''", $user_actkey) . "'" . $avatar_sql . " WHERE user_id = $user_id";
 \end{lstlisting}
 Now we can see that Alice's signature changes, but not her password:\\
-\includegraphics[]{gfx/sql/changed_bob.png}\\
+\includegraphics[width=.95\textwidth]{gfx/sql/changed_bob.png}\\
 As well as we can log in to Bob account using the password we provided in the previous form:\\
-\includegraphics[]{gfx/sql/chainging_alice.png}\\
+\includegraphics[width=.95\textwidth]{gfx/sql/chainging_alice.png}\\
 
 We can also show that we can modify a password without knowing any user's password. We can get access to a user account using first attack. Then we can inject SQL statement in the signature with a new password that is an md5 hash of our choice:\\
 For Ted's password: \texttt{', user\_password = \"1a1dc91c907325c69271ddf0c944bc72a WHERE userid = 6 \# '}\\
 And that way we can take control on every account and by-pass mechanism in PhpBB that prevents changing the password without providing the old one first.
 
 Another interesting finding is that if we create malformed SQL statement, we can debug it since a debug mode is turned on on the server. This allows us to see details of the SQL query without having access to the code. In real production servers debug messages should never be printed for that reason.\\
-\includegraphics[width=450px]{gfx/sql/debug.png}
+\includegraphics[width=.95\textwidth]{gfx/sql/debug.png}
 
 \subsection{Countermeasures}
 
@@ -368,7 +368,7 @@ if($prepared =  $stmt->prepare("SELECT user_id, username, user_password, user_ac
 \end{lstlisting}
 
 Because \texttt{\$db} was not of type MySQLi, our code caused the following error:\\\\
-\includegraphics{gfx/sql/mysqli.png}
+\includegraphics[width=.95\textwidth]{gfx/sql/mysqli.png}
 \section{Conclusions}
 
 Lorem ipsum
