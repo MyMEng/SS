@@ -135,6 +135,10 @@ As we can see, the attacker managed to ``convince'' the victim that his hardware
 
 \includegraphics[width=.95\textwidth]{gfx/arp-shark}
 
+Using this attack we can monitor traffic going through the victim machine or we could cause DOS attack by mapping victim address to a non-existing host MAC address.
+
+There are several methods of preventing such attacks outlined \textit{here~\cite{blog}}, e.g. mainting static ARP table for small network or dynamic ARP inspection at the switch level to check authenticity of ARP requests.
+
 
 \subsection{ICMP Redirect Attack}
 
@@ -145,18 +149,20 @@ In this attack we want to listen to packet exchange between a victim and a third
 In order for the attack to succeed, we need to repeat the ARP attack (see \emph{section}~\ref{arp}).
 
 Again using our script shown in the appendix~\ref{script1} we use \texttt{netwox} to spoof the ICMP message.\\
+\includegraphics[width=.95\textwidth]{gfx/imcp-netwox}\\
 
-\includegraphics[width=.95\textwidth]{gfx/imcp-ping}\\
 
 Now the entire network believes that the attacker is the new gate-away. If we try to ping the victim (at the address \texttt{10.0.2.4}) on the observer's machine (at the address \texttt{10.0.2.5}), we see that the communication works:\\
 
-\includegraphics[width=.95\textwidth]{gfx/imcp-netwox}\\
+\includegraphics[width=.95\textwidth]{gfx/imcp-ping}\\
 
 However, the attacker can now watch the communication and data being sent using \texttt{Wireshark}.\\
 
 \includegraphics[width=.95\textwidth]{gfx/imcp-shark}\\
 
 Such a set-up can for example lead to capturing sensitive data that is unencrypted or may lead to recognizing known cipher-text--plain-text pairs that can be used for various attacks on encryption algorithms.
+
+We can set up any non-router machine in the network not to accept ICMP redirect packets to prevent this kind of attack~\cite{imcp}.
 
 \subsection{SYN Flooding Attack}
 
