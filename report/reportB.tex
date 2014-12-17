@@ -252,6 +252,10 @@ s.close()
 print "received data:", data
 \end{lstlisting}
 
+We run the two scripts on observer and victim machine. Then we repeat ARP as the attacker and spoof RST packet in the same way as in the previous task.
+
+This results in connection between victim and the simulated server being terminated:\\
+\includegraphics[width=.95\textwidth]{gfx/python.png}
 
 \subsection{ICMP Blind Connection-Reset and Source-Quench Attacks}
 
