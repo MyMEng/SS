@@ -137,7 +137,7 @@ As we can see, the attacker managed to ``convince'' the victim that his hardware
 
 Using this attack we can monitor traffic going through the victim machine or we could cause DOS attack by mapping victim address to a non-existing host MAC address.
 
-There are several methods of preventing such attacks outlined \textit{here~\cite{blog}}, e.g. mainting static ARP table for small network or dynamic ARP inspection at the switch level to check authenticity of ARP requests.
+There are several methods of preventing such attacks outlined \textit{here~\cite{blog}}, e.g. maintaining static ARP table for small networks or dynamic ARP inspection at the switch level to check authenticity of ARP requests.
 
 
 \subsection{ICMP Redirect Attack}
@@ -283,7 +283,7 @@ This results in connection between victim and the simulated server being termina
 Another attack we attempted was to spoof ICMP packets for routers that would cause the resetting of connection or sending a ``source quench'' packet that would tell the router to slow down all the connections.
 
 We used \texttt{netwox} tool to create these packets on the attacker machine.
-Using wireshark we can see that these spoofed packets were indeed being sent:\\
+Using Wireshark we can see that these spoofed packets were indeed being sent:\\
 
 \includegraphics[width=.95\textwidth]{gfx/unrechable.png}
 
