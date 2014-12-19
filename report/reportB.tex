@@ -170,7 +170,7 @@ In this attack our task was to cause a Denial of Service using SYN flood attack.
 
 In the attack, an attacker sends multiple SYN packets without responding to SYN\_RECV. This is done by randomizing the IP address in the original SYN request, so that the response goes to nobody as a consequence. This causes the server to keep many ``half-open'' connections.\\
 
-We perform the SYN flood attack using netwox using the script we created (see \ref{script1}). We can then see on the victim machine that there are many connections opened at state ``SYN-AC'' from many random IP addresses:\\
+We perform the SYN flood attack using netwox using the script we created (see \emph{Appendix}~\ref{script1}). We can then see on the victim machine that there are many connections opened at state ``SYN-AC'' from many random IP addresses:\\
 \includegraphics[width=.95\textwidth]{gfx/syn-netstat.png}
 
 We send those requests to telnet port 23. However, we are still able to connect from an observer machine using telnet. This is because by default a mechanism for preventing SYN flood attacks is turned on. If we switch it off using the command \texttt{sudo sysctl -w net.ipv4.tcp\_syncookies=0} then we indeed see that our denial of service attacks works and we cannot connect to the victim machine using telnet:\\
@@ -576,7 +576,7 @@ Because \texttt{\$db} was not of type MySQLi, our code caused the following erro
 \includegraphics[width=.95\textwidth]{gfx/sql/mysqli.png}
 
 \section{Conclusions}
-All presented here attacks can cause potential harm to the owner of vulnerable system. All bugs allowing potential attacks have been addressed in updates and patches but it is never possible to have perfectly secure system. unavoidable to have perfe
+All presented here attacks can cause potential harm to the owner of vulnerable system. All bugs allowing potential attacks have been addressed in updates and patches but it is never possible to have perfectly secure system.
 
 \vfill
 \bibliographystyle{plain}
