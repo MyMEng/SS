@@ -391,7 +391,7 @@ We also noticed that after refreshing multiple times, the response contains an e
 \includegraphics[width=.95\textwidth]{gfx/xss/task5-worm-working}
 
 \subsection{Writing a Self-Propagating XSS Worm}
-We also successfully modified the worm in a way that posted message contains the the worm itself. The source code is available in \emph{appendix}~\ref{app:javasc2}.
+We also successfully modified the worm in a way that posted message contains the worm itself. The source code is available in \emph{appendix}~\ref{app:javasc2}.
 The worm would post another reply as the user viewing the infected message, and the new reply would also contain the worm code. We expected to see exponential increase in the replies as we viewed the thread, however the mechanism preventing too many posts at a time mentioned in previous part was to an extent preventing this to happen.
 
 We can see that the reply "Attack" was created after that Bob visited the thread, however in the Firebug output now two requests are being made, because the new reply also contains the malicious script.\\
@@ -576,7 +576,11 @@ Because \texttt{\$db} was not of type MySQLi, our code caused the following erro
 \includegraphics[width=.95\textwidth]{gfx/sql/mysqli.png}
 
 \section{Conclusions}
-All presented here attacks can cause potential harm to the owner of vulnerable system. All bugs allowing potential attacks have been addressed in updates and patches but it is never possible to have perfectly secure system.
+All presented here attacks can cause potential harm to the owner of vulnerable system. All bugs allowing potential attacks have been addressed in updates and patches but it is never possible to have perfectly secure system.\\
+
+The only system that we could prove to be absolutely secure is the one that never accepts any input from a user---what is not the case in terms of Internet services.\\
+
+It is therefore important to put a lot of thought into ``point of entries'' of our systems---weather this is a TCP socket or an input field on our website. We always should be validating the data coming to our software from the outside world and it cannot be stressed enough how important it is to use up to date components.
 
 \vfill
 \bibliographystyle{plain}
