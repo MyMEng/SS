@@ -322,8 +322,6 @@ Our goal was to send ``pwd'' command to display path on observer machine, preten
 messages, we knew what were consecutive ``seq'' and and ``ack'' numbers. We had to use these values to prepare our packets. We had to insert
 the increased ``ack'' number to be our new ``seq'' number and the previous, increased sequence number to be our next ``ack'' that we want to receive from the observer.\\
 
-\includegraphics[width=.95\textwidth]{gfx/response.png}
-
 We prepared the packet using \texttt{netwag} and tool 40:\\
 \begin{verbatim}
 Command 40 --ip4-dontfrag --ip4-offsetfrag 0 --ip4-ttl 64 --... :
@@ -355,7 +353,7 @@ __END_OF_PROGRAM__
 Last 4 bytes in that packet, ``70 77 64 0d'' are ASCII encoded string ``pwd\textbackslash r\textbackslash n''
 
 
-We could observe teh packet being send in the Wireshark tool:\\ \includegraphics[width=.95\textwidth]{gfx/request.png}\\
+We could observe the packet being send in the Wireshark tool:\\ \includegraphics[width=.95\textwidth]{gfx/request.png}\\
 
 After sending this packet, we had to also create ACK packet before the observer would provide us with the final response. Once response was send, the observer machine, convinced it's talking to the victim, would provide us with the response to the \texttt{pwd} command, which was the path to the observer home folder:\\
 
