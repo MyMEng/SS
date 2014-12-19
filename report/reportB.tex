@@ -576,7 +576,11 @@ Because \texttt{\$db} was not of type MySQLi, our code caused the following erro
 \includegraphics[width=.95\textwidth]{gfx/sql/mysqli.png}
 
 \section{Conclusions}
-All presented here attacks can cause potential harm to the owner of vulnerable system. All bugs allowing potential attacks have been addressed in updates and patches but it is never possible to have perfectly secure system. unavoidable to have perfe
+All presented here attacks can cause potential harm to the owner of vulnerable system. All bugs allowing potential attacks have been addressed in updates and patches but it is never possible to have perfectly secure system.
+
+The only system that we could prove to be absolutely secure is the one that never accepts any input from a user - what is not the case in terms of Internet services.
+
+It is therefore important to put a lot of thought into ``point of entries'' of our systems - weather this is a TCP socket or an input field on our website. We always should be validating the data coming to our software from the outside world and it cannot be stressed enough how important it is to use up to date components.
 
 \vfill
 \bibliographystyle{plain}
